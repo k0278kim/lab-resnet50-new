@@ -78,6 +78,7 @@ class Bottleneck(nn.Module):
     '''
 
     expansion = 4
+    skip_expansion = 2
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
@@ -181,7 +182,7 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0, ceil_mode=True)
 
         # 150,150,64 -> 150,150,256
-        self.layer1 = self._make_layer(block, 64, layers[0], skip_planes=32)
+        self.layer1 = self._make_layer(block, 16, layers[0], skip_planes=32)
         # 150,150,256 -> 75,75,512
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         # 75,75,512 -> 38,38,1024 到这里可以获得一个38,38,1024的共享特征层
@@ -221,11 +222,11 @@ class ResNet(nn.Module):
         # 边（do构建Conv Block的残差wnsample）
         if stride != 1 or self.inplanes != planes * block.expansion:# block.expansion=4
             downsample = nn.Sequential(
-                nn.Conv2d(self.skip_planes, planes * block.skipExpansion, kernel_size=1, stride=stride, bias=False),    #TODO: original conv
+                nn.Conv2d(self.skip_planes, planes * block.skip_expansion, kernel_size=1, stride=stride, bias=False),    #TODO: original conv
             # CustomConv2D(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),   #TODO: custom conv
-                nn.BatchNorm2d(planes * block.skipExpansion),
+                nn.BatchNorm2d(planes * block.skip_expansion),
             )
-            self.skip_planes = skip_planes * block.skipExpansion
+            self.skip_planes = skip_planes * block.skip_expansion
        
         layers = [] # For stacking Conv Block 和 Identity Block
         # Add一a layer of Conv Block
