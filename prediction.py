@@ -19,7 +19,14 @@ Batch_Size = 1
 
 # model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10)
 model = ResNet(Bottleneck, [3, 4, 6, 3])
-model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
+
+# 모델에 저장된 파라미터(weight, bias)를 로드
+# model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
+# state_dict = torch.load()
+
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+criterion = torch.nn.CrossEntropyLoss()
+
 model = model.cpu()
 model.eval()
 
@@ -28,42 +35,45 @@ test_dataset = datasets.MNIST(root='data/', train=False,
                                     transform=transforms.ToTensor(), download=True)
 test_loader  = DataLoader(dataset=test_dataset, batch_size=Batch_Size, shuffle=False)
 
-# Accuracy evaluation
-correct = 0
-total = 0
+train_dataset = datasets.MNIST(root='data/', train=True, transform=transforms.ToTensor(), download=True)
+train_loader = DataLoader(dataset=train_dataset, batch_size=Batch_Size, shuffle=True)
+
+num_epochs = 5
+for epoch in range(num_epochs):
+    model.train()
+    for images, labels in train_loader:
+        images = images.to('cpu')
+        labels = labels.to('cpu')
+
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
+
+# # Accuracy evaluation
+# correct = 0
+# total = 0
+
+# n_dat = 1
 # with torch.no_grad():
-#     pbar = tqdm(test_loader, total=len(test_loader), desc="Testing")
+#     pbar = tqdm(test_loader, total=n_dat, desc="Testing")
+#     idx = 0
 #     for images, labels in pbar:
-#         # print(f"\nBatch {i}: loaded")
+#         if (idx == n_dat):
+#             break
 #         images = images.cpu()
 #         labels = labels.cpu()
-        
 #         outputs = model(images)
 #         _, predicted = torch.max(outputs.data, 1)
-        
+#         idx += 1
 #         total += labels.size(0)
 #         correct += (predicted == labels).sum().item()
 #         accuracy = 100 * correct / total
 #         pbar.set_postfix({'Accuracy (%)': f"{accuracy:.2f}"})
 
-# 🚨 after this: TEST_CODE
-
-n_dat = 1
-with torch.no_grad():
-    pbar = tqdm(test_loader, total=n_dat, desc="Testing")
-    idx = 0
-    for images, labels in pbar:
-        if (idx == n_dat):
-            break
-        images = images.cpu()
-        labels = labels.cpu()
-        outputs = model(images)
-        _, predicted = torch.max(outputs.data, 1)
-        idx += 1
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-        accuracy = 100 * correct / total
-        pbar.set_postfix({'Accuracy (%)': f"{accuracy:.2f}"})
-
-accuracy = 100 * correct / total
-print(f"✅ Accuracy on the MNIST test set: {accuracy:.2f}%")
+# accuracy = 100 * correct / total
+# print(f"✅ Accuracy on the MNIST test set: {accuracy:.2f}%")
