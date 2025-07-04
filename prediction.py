@@ -32,7 +32,7 @@ criterion = torch.nn.CrossEntropyLoss()
 # model.eval()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(torch.cuda.is_available(), torch.cuda.get_device_name(0))
+print(torch.cuda.is_available())
 model = model.to(device)
 
 #Load test dataset
