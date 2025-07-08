@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import ctypes   # Load the shared library  
-cal = ctypes.cdll.LoadLibrary("./calculator.so")
+cal = ctypes.cdll.LoadLibrary("./calculator-mac.so")
 
 class CustomConv2D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
@@ -85,21 +85,21 @@ class Bottleneck(nn.Module):
         
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        # print(f'bottleneck conv1: ({inplanes}, {planes})')
+        print(f'bottleneck conv1: ({inplanes}, {planes})')
         
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
-        # print(f'bottleneck conv2: ({planes}, {planes})')
+        print(f'bottleneck conv2: ({planes}, {planes})')
         
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
-        # print(f'bottleneck conv3: ({planes}, {planes * 4})')
+        print(f'bottleneck conv3: ({planes}, {planes * 4})')
         
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
 
-        # print('====')
+        print('====')
 
 
         
@@ -156,14 +156,15 @@ class Bottleneck(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes=10):
         
-        self.inplanes = 64
+        self.inplanes = 16
         super(ResNet, self).__init__()
 
         cal.matrix_product.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
         cal.matrix_product.restype = ctypes.c_float
         
-        self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)                  #FIXME: custom conv
-        self.bn1 = nn.BatchNorm2d(64)
+        # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=1, bias=False,)
+        self.bn1 = nn.BatchNorm2d(16)
         self.relu = nn.ReLU(inplace=True)
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0, ceil_mode=True)
@@ -189,7 +190,7 @@ class ResNet(nn.Module):
         ''' 
         downsample = None
 
-        print(f'origin: ({planes}, {self.inplanes})')
+        # print(f'make_layer origin: ({self.inplanes}, {planes})')
 
         if stride != 1 or self.inplanes != planes * block.expansion:# block.expansion=4
 
@@ -234,19 +235,22 @@ class ResNet(nn.Module):
                 nn.Conv2d(skip_planes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(planes * block.expansion)
             )
+
+            print(f'skip_connections: ({self.inplanes}, {skip_planes})')
+            print(f'skip_connections: ({skip_planes}, {planes * block.expansion})')
        
         layers = []
 
-        # print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
+        print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
         layers.append(block(self.inplanes, planes, stride, downsample))
 
         self.inplanes = planes * block.expansion
 
         for i in range(1, blocks):
-            # print(f'make block - {i + 1} : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
+            print(f'make block - {i + 1} : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
             layers.append(block(self.inplanes, planes))
         
-        # print("================")
+        print("================")
 
         return nn.Sequential(*layers)
 
@@ -255,12 +259,13 @@ class ResNet(nn.Module):
         x_padded = F.pad(x, (padding, padding, padding, padding))
         _, _, in_height, in_width = x.shape
     
-        x = self.conv1(x_padded, in_height, in_width)
+        # x = self.conv1(x_padded, in_height, in_width) # FIXME: custom_conv
+        x = self.conv1(x_padded)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
 
-        # print(x.detach().numpy().shape)
+        print(x.detach().numpy().shape)
 
         # print("layer1=====>")
         x = self.layer1(x)

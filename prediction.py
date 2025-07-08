@@ -41,9 +41,9 @@ model = model.to(device)
 # test_loader  = DataLoader(dataset=test_dataset, batch_size=Batch_Size, shuffle=False)
 
 train_dataset = datasets.MNIST(root='data/', train=True, transform=transforms.ToTensor(), download=True)
-train_loader = DataLoader(dataset=train_dataset, batch_size=Batch_Size, shuffle=True, pin_memory=True, num_workers=4)
+train_loader = DataLoader(dataset=train_dataset, batch_size=Batch_Size, shuffle=True, pin_memory=True, num_workers=0)
 
-num_epochs = 5
+num_epochs = 1 # 5
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
@@ -64,8 +64,7 @@ for epoch in range(num_epochs):
         pbar.set_postfix({'loss': f"{loss.item():.4f}"})
 
     print(f"✅ Epoch [{epoch+1}/{num_epochs}] - Avg Loss: {running_loss / len(train_loader):.4f}")
-
-torch.save(model.state_dict(), 'resnet-model.pth')
+    torch.save(model.state_dict(), f'resnet-model-{epoch}.pth')
 
 # # Accuracy evaluation
 # correct = 0
