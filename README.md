@@ -1,2 +1,1 @@
-The final version of the project. 
-The files to be tested on the other pc.
+# IPFE & Resnet50용 모델
