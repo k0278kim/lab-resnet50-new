@@ -1,91 +1,82 @@
-"""This script is used to test the accuracy of the ResNet50 model on the MNIST test dataset."""
-
 import torch
-from nets.resnet50 import ResNet,Bottleneck
+import torch.nn as nn
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
-from torch.autograd import Variable
-import torchvision
-import cv2
-import time
 from tqdm import tqdm
-import numpy as np
+from nets.resnet50 import ResNet, Bottleneck
+from nets.early_stopping import EarlyStopping
 
-# Load model
-# Path to the pretrained model
-PATH = './logs/resnet50-mnist.pth'
-# Ask user for batch size
-# Batch_Size = int(input('The number of handwritten font images predicted each times：'))
-Batch_Size = 512
+# 하이퍼파라미터
+BATCH_SIZE = 1
+NUM_EPOCHS = 20
+LEARNING_RATE = 1e-3
+MODEL_SAVE_PATH = "./resnet50-mnist.pth"
+NUM_WORKERS = 0
 
-# model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10)
-model = ResNet(Bottleneck, [3, 4, 6, 3])
+# CUDA 설정
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
 
-# 모델에 저장된 파라미터(weight, bias)를 로드
-# model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
-# state_dict = torch.load()
+# 모델 초기화
+model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10).to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-criterion = torch.nn.CrossEntropyLoss()
+# 손실함수 및 옵티마이저
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-# model = model.cpu()
-# model.eval()
+# 학습 데이터셋
+transform = transforms.ToTensor()
+train_dataset = datasets.MNIST(root='data/', train=True, transform=transform, download=True)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(torch.cuda.is_available())
-model = model.to(device)
+# 테스트 데이터셋
+test_dataset = datasets.MNIST(root='data/', train=False, transform=transform, download=True)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
-#Load test dataset
-# test_dataset = datasets.MNIST(root='data/', train=False,
-#                                     transform=transforms.ToTensor(), download=True)
-# test_loader  = DataLoader(dataset=test_dataset, batch_size=Batch_Size, shuffle=False)
+# 조기 종료 조건 초기화
+early_stopping = EarlyStopping(patience=5, delta=0.001)
 
-train_dataset = datasets.MNIST(root='data/', train=True, transform=transforms.ToTensor(), download=True)
-train_loader = DataLoader(dataset=train_dataset, batch_size=Batch_Size, shuffle=True, pin_memory=True, num_workers=0)
-
-num_epochs = 1 # 5
-for epoch in range(num_epochs):
+# 학습 루프
+for epoch in range(NUM_EPOCHS):
     model.train()
     running_loss = 0.0
 
-    pbar = tqdm(train_loader, desc=f"Epoch [{epoch+1}/{num_epochs}]")
+    pbar = tqdm(train_loader, desc=f"Epoch [{epoch + 1}/{NUM_EPOCHS}]")
     for images, labels in pbar:
-        images = images.to(device)
-        labels = labels.to(device)
-
-        outputs = model(images)
-        loss = criterion(outputs, labels)
+        images, labels = images.to(device), labels.to(device)
 
         optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
         running_loss += loss.item()
         pbar.set_postfix({'loss': f"{loss.item():.4f}"})
 
-    print(f"✅ Epoch [{epoch+1}/{num_epochs}] - Avg Loss: {running_loss / len(train_loader):.4f}")
-    torch.save(model.state_dict(), f'resnet-model-{epoch}.pth')
+    avg_loss = running_loss / len(train_loader)
+    print(f"✅ Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
 
-# # Accuracy evaluation
-# correct = 0
-# total = 0
+    # 모델 저장
+    torch.save(model.state_dict(), f'resnet-model-epoch{epoch+1}.pth')
 
-# n_dat = 1
-# with torch.no_grad():
-#     pbar = tqdm(test_loader, total=n_dat, desc="Testing")
-#     idx = 0
-#     for images, labels in pbar:
-#         if (idx == n_dat):
-#             break
-#         images = images.cpu()
-#         labels = labels.cpu()
-#         outputs = model(images)
-#         _, predicted = torch.max(outputs.data, 1)
-#         idx += 1
-#         total += labels.size(0)
-#         correct += (predicted == labels).sum().item()
-#         accuracy = 100 * correct / total
-#         pbar.set_postfix({'Accuracy (%)': f"{accuracy:.2f}"})
+    # 조기 종료 체크 (여기선 train_loss 기반이지만 val_loss가 있으면 교체 가능)
+    early_stopping(avg_loss)
+    if early_stopping.early_stop:
+        print(f"⛔ Early stopping at epoch {epoch+1}")
+        break
 
-# accuracy = 100 * correct / total
-# print(f"✅ Accuracy on the MNIST test set: {accuracy:.2f}%")
+# 테스트 정확도 측정
+model.eval()
+correct = 0
+total = 0
+with torch.no_grad():
+    for images, labels in tqdm(test_loader, desc="Testing"):
+        images, labels = images.to(device), labels.to(device)
+        outputs = model(images)
+        _, predicted = torch.max(outputs.data, 1)
+        correct += (predicted == labels).sum().item()
+        total += labels.size(0)
+
+accuracy = 100 * correct / total
+print(f"✅ Test Accuracy: {accuracy:.2f}%")

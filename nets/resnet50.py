@@ -265,7 +265,7 @@ class ResNet(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
 
-        print(x.detach().numpy().shape)
+        # print(x.detach().numpy().shape)
 
         # print("layer1=====>")
         x = self.layer1(x)
