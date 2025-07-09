@@ -156,15 +156,15 @@ class Bottleneck(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes=10):
         
-        self.inplanes = 16
+        self.inplanes = 64
         super(ResNet, self).__init__()
 
         cal.matrix_product.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
         cal.matrix_product.restype = ctypes.c_float
         
         # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
-        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=1, bias=False,)
-        self.bn1 = nn.BatchNorm2d(16)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, bias=False,)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0, ceil_mode=True)
@@ -241,7 +241,7 @@ class ResNet(nn.Module):
        
         layers = []
 
-        print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
+        print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes} / 최종 채널 {planes * block.expansion}')
         layers.append(block(self.inplanes, planes, stride, downsample))
 
         self.inplanes = planes * block.expansion
