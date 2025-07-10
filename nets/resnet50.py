@@ -80,24 +80,46 @@ class Bottleneck(nn.Module):
     expansion = 4
     skip_expansion = 2
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4):
         super(Bottleneck, self).__init__()
+
+        self.use_custom_conv = use_custom_conv
         
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes)
-        print(f'bottleneck conv1: ({inplanes}, {planes})')
-        
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
-        print(f'bottleneck conv2: ({planes}, {planes})')
-        
-        self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(planes * 4)
-        print(f'bottleneck conv3: ({planes}, {planes * 4})')
-        
-        self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
-        self.stride = stride
+        # use_custom_conv: 암호화 내적을 하는가?
+        if use_custom_conv:
+            self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)   # 1x1 conv
+            self.bn1 = nn.BatchNorm2d(planes)
+            print(f'bottleneck conv1: ({inplanes} -> {planes})')
+            
+            self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+            self.bn2 = nn.BatchNorm2d(planes)
+            print(f'bottleneck conv2: ({planes} -> {planes})')
+            
+            self.conv3 = nn.Conv2d(planes, planes * 4 * planes_per_use_custom_planes, kernel_size=1, bias=False)
+            self.bn3 = nn.BatchNorm2d(planes * 4 * planes_per_use_custom_planes)
+            print(f'bottleneck conv3: ({planes} -> {planes * 4 * planes_per_use_custom_planes})')
+            
+            self.relu = nn.ReLU(inplace=True)
+            self.downsample = downsample
+            self.stride = stride
+
+        else:
+            self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)
+
+            self.bn1 = nn.BatchNorm2d(planes)
+            print(f'bottleneck conv1: ({inplanes} -> {planes})')
+            
+            self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+            self.bn2 = nn.BatchNorm2d(planes)
+            print(f'bottleneck conv2: ({planes} -> {planes})')
+            
+            self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
+            self.bn3 = nn.BatchNorm2d(planes * 4)
+            print(f'bottleneck conv3: ({planes} -> {planes * 4})')
+            
+            self.relu = nn.ReLU(inplace=True)
+            self.downsample = downsample
+            self.stride = stride
 
         print('====')
 
@@ -154,10 +176,12 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=10):
+    def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
         
         self.inplanes = 64
         super(ResNet, self).__init__()
+
+        self.custom_conv_layer_index = custom_conv_layer_index
 
         cal.matrix_product.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
         cal.matrix_product.restype = ctypes.c_float
@@ -169,15 +193,15 @@ class ResNet(nn.Module):
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0, ceil_mode=True)
 
-        self.layer1 = self._make_layer(block, 64, layers[0], skip_planes=32)
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, skip_planes=64)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, skip_planes=128)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, skip_planes=256)
+        self.layer1 = self._make_layer(block, 64, layers[0], skip_planes=32, layer_index=1, use_custom_planes=16)
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, skip_planes=128, layer_index=2, use_custom_planes=64)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, skip_planes=256, layer_index=3, use_custom_planes=128)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, skip_planes=512, layer_index=4, use_custom_planes=256)
 
         self.avgpool = nn.AvgPool2d(2)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-    def _make_layer(self, block, planes, blocks, skip_planes, stride=1):
+    def _make_layer(self, block, planes, blocks, skip_planes, stride=1, layer_index=1, use_custom_planes=16):
         '''
         Used to construct a stack of Conv Block and Identity Block
         :param block:就是上面的Bottleneck，Used to implement the most basic residual block structure in resnet50
@@ -189,6 +213,7 @@ class ResNet(nn.Module):
 
         ''' 
         downsample = None
+        use_custom = (layer_index == self.custom_conv_layer_index)
 
         # print(f'make_layer origin: ({self.inplanes}, {planes})')
 
@@ -229,26 +254,45 @@ class ResNet(nn.Module):
             # nn.Conv2d(skip_planes, planes * block.expansion)
             # nn.BatchNorm2d(planes * block.expansion * 2)
 
-            downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
-                nn.BatchNorm2d(skip_planes),
-                nn.Conv2d(skip_planes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(planes * block.expansion)
-            )
+            print(f'use_custom: {use_custom}')
 
-            print(f'skip_connections: ({self.inplanes}, {skip_planes})')
-            print(f'skip_connections: ({skip_planes}, {planes * block.expansion})')
+            if use_custom:
+                downsample = nn.Sequential(
+                    nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
+                    nn.BatchNorm2d(skip_planes),
+                    nn.Conv2d(skip_planes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
+                    nn.BatchNorm2d(planes * block.expansion)
+                )
+                print(f'skip_connections: ({self.inplanes} -> {skip_planes})')
+                print(f'skip_connections: ({skip_planes} -> {planes * block.expansion})')
+                
+            else:
+                downsample = nn.Sequential(
+                    nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
+                    nn.BatchNorm2d(planes * block.expansion)
+                )
+
+                print(f'skip_connections: ({self.inplanes} -> {planes * block.expansion})')
+            
        
         layers = []
 
-        print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes} / 최종 채널 {planes * block.expansion}')
-        layers.append(block(self.inplanes, planes, stride, downsample))
-
-        self.inplanes = planes * block.expansion
+        if use_custom:
+            print(f'<use custom> make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {use_custom_planes}')
+            layers.append(block(self.inplanes, use_custom_planes, stride, downsample, use_custom_conv=use_custom, planes_per_use_custom_planes=planes // use_custom_planes))
+            self.inplanes = use_custom_planes * block.expansion * (planes // use_custom_planes)
+        
+        else:
+            print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
+            layers.append(block(self.inplanes, planes, stride, downsample, use_custom_conv=use_custom))
+            self.inplanes = planes * block.expansion
 
         for i in range(1, blocks):
             print(f'make block - {i + 1} : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
             layers.append(block(self.inplanes, planes))
+
+        print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes} / 최종 채널 {planes * block.expansion}')
+        
         
         print("================")
 

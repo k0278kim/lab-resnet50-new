@@ -18,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 # 모델 초기화
-model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10).to(device)
+model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=1).to(device)
 
 # 손실함수 및 옵티마이저
 criterion = nn.CrossEntropyLoss()

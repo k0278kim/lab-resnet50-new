@@ -14,7 +14,7 @@ PATH = './resnet-model-epoch19.pth'
 # Ask user for batch size
 # Batch_Size = int(input('The number of handwritten font images predicted each times：'))
 Batch_Size = 1
-model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10)
+model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=1)
 model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
 model = model.cpu()
 model.eval()
