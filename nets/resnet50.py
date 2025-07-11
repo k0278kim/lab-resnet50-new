@@ -14,7 +14,6 @@ class CustomConv2D(nn.Module):
         self.stride = stride
         self.padding = padding
 
-        # Initialize weights and bias as trainable parameters
         self.weight = nn.Parameter(torch.randn(out_channels, in_channels, kernel_size, kernel_size) * 0.1)
         self.bias = nn.Parameter(torch.zeros(out_channels)) if bias else None
 
@@ -22,48 +21,7 @@ class CustomConv2D(nn.Module):
         return self.custom_conv2d(x_padded, in_height, in_width, self.weight, self.bias, self.stride, self.padding)
 
     def custom_conv2d(self, input_padded, in_height, in_width, weight, bias=None, stride=1, padding=0):
-        batch_size, in_channels, _, _ = input_padded.shape
-        # batch_size, in_channels, in_height, in_width = input.shape
-        out_channels, _, kernel_height, kernel_width = weight.shape
-
-        # Padding
-        # input_padded = F.pad(input, (padding, padding, padding, padding))   #torch.Size([5, 1, 32, 32]), input_padded.cpu().numpy().shape = (5, 1, 32, 32)
-  
-        # Compute output dimensions
-        out_height = (in_height + 2 * padding - kernel_height) // stride + 1
-        out_width = (in_width + 2 * padding - kernel_width) // stride + 1
-
-        # Initialize output tensor
-        output = torch.zeros((batch_size, out_channels, out_height, out_width), device=input_padded.device)
-
-        # Convolution operation
-        for b in range(batch_size):  # Iterate over batch
-            for o in range(out_channels):  # Iterate over output channels
-                for i in range(in_channels):  # Iterate over input channels
-                    for h in range(out_height):
-                        for w in range(out_width): 
-                            h_start, w_start = h * stride, w * stride
-                            region = input_padded[b, i, h_start:h_start + kernel_height, w_start:w_start + kernel_width]
-                            # output[b, o, h, w] += torch.sum(region * weight[o, i])  # Element-wise multiplication
-                            #Use .copy() - Fix: Make it Contiguous First
-                            region_np = np.ascontiguousarray(region.detach().cpu().numpy(), dtype=np.float32) # change arr1 for ctypes object
-                            weight_np = np.ascontiguousarray(weight[o, i].detach().cpu().numpy(), dtype=np.float32)             # change arr2 for ctypes object
-                            # weight_np = np.ascontiguousarray(weight_tensor.detach().cpu().numpy(), dtype=np.float32) # change arr2 for ctypes object
-                            region_ctypes = region_np.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-                            weight_ctypes = weight_np.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-                            output[b, o, h, w] = cal.matrix_product(region_ctypes, weight_ctypes, kernel_height, kernel_width)
- 
-                            torch_result = torch.sum(region * weight[o, i]).item()  # Element-wise multiplication
-                            if not np.isclose(output[b, o, h, w].item(), torch_result, rtol=1e-3, atol=1e-5):
-                                print(f"Mismatch at (b={b}, o={o}, i={i}, h={h}, w={w})")
-                                print(f"  C result     = {output[b, o, h, w]}")
-                                print(f"  Torch result = {torch_result}")
-
-                # Add bias after processing all input channels
-                if bias is not None:
-                    output[b, o, :, :] += bias[o]
-
-        return output
+        return
 
 
 class Bottleneck(nn.Module):
@@ -126,49 +84,21 @@ class Bottleneck(nn.Module):
 
         
     def forward(self, x):
-        '''
-        This block implements the residual block structure
-
-        ResNet50 has two basic blocks，naming Conv Block & Identity Block，resnet50 uses these two structures stacked together。
-        The biggest difference between them is whether there is convolution on the residual edge。
-
-        Identity Blockis the normal residual structure，There is no convolution on the residual side，and the input is directly added to the output；
-        The residual edge of Conv Block adds convolution operation and BN operation (batch normalization)，Its function is to change the number of channels 
-        of the convolution operation step，Achieve the effect of changing the network dimension。
-
-        也就是说
-        Identity Block input dimension and output dimension are the same，Can be connected in series，To deepen the network；
-        Conv Block input and output dimensions are different，Therefore, it cannot be connected in series，Its function is to change the dimension of the network。
-        :param
-        x:输入数据
-        :return:
-        out:网络输出结果
-        '''
         residual = x
-        # print(f'x: {x.detach().numpy().shape}')
 
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
 
-        # print(f'out1: {out.detach().numpy().shape}')
-
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
 
-        # print(f'out2: {out.detach().numpy().shape}')
-
         out = self.conv3(out)
         out = self.bn3(out)
 
-        # print(f'out3: {out.detach().numpy().shape}')
-
         if self.downsample is not None:
-            # print("residual로 합치기~")
-            # print(f'residual-in: {residual.detach().numpy().shape}')
             residual = self.downsample(x)
-            # print(f'residual-out: {residual.detach().numpy().shape}')
 
         out += residual
         out = self.relu(out)
@@ -215,9 +145,7 @@ class ResNet(nn.Module):
         downsample = None
         use_custom = (layer_index == self.custom_conv_layer_index)
 
-        # print(f'make_layer origin: ({self.inplanes}, {planes})')
-
-        if stride != 1 or self.inplanes != planes * block.expansion:# block.expansion=4
+        if stride != 1 or self.inplanes != planes * block.expansion:
 
             # 제한: 64 (32->256)
             # nn.Conv2d(64, 32)
@@ -246,13 +174,6 @@ class ResNet(nn.Module):
             # nn.Conv2d(256, 2048)
             # nn.BatchNorm2d(2048 * 2)
             # out3: (1,2048,2,2)
-
-            # skip_planes = 32 -> 128 -> 512 -> 2048
-
-            # nn.Conv2d(self.inplanes, skip_planes)
-            # nn.BatchNorm2d(skip_planes * 2)
-            # nn.Conv2d(skip_planes, planes * block.expansion)
-            # nn.BatchNorm2d(planes * block.expansion * 2)
 
             print(f'use_custom: {use_custom}')
 
@@ -309,15 +230,9 @@ class ResNet(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
 
-        # print(x.detach().numpy().shape)
-
-        # print("layer1=====>")
         x = self.layer1(x)
-        # print("layer2=====>")
         x = self.layer2(x)
-        # print("layer3=====>")
         x = self.layer3(x)
-        # print("layer4=====>")
         x = self.layer4(x)
 
         x = self.avgpool(x)
@@ -326,13 +241,13 @@ class ResNet(nn.Module):
         return x
 
 
-def resnet50():
-    model = ResNet(Bottleneck, [3, 4, 6, 3])
+# def resnet50():
+#     model = ResNet(Bottleneck, [3, 4, 6, 3])
     
-    features = list([model.conv1, model.bn1, model.relu, model.maxpool, model.layer1, model.layer2, model.layer3])
+#     features = list([model.conv1, model.bn1, model.relu, model.maxpool, model.layer1, model.layer2, model.layer3])
     
-    classifier = list([model.layer4, model.avgpool])
+#     classifier = list([model.layer4, model.avgpool])
 
-    features = nn.Sequential(*features)
-    classifier = nn.Sequential(*classifier)
-    return features, classifier
+#     features = nn.Sequential(*features)
+#     classifier = nn.Sequential(*classifier)
+#     return features, classifier
