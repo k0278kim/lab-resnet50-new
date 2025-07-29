@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import ctypes   # Load the shared library  
-cal = ctypes.cdll.LoadLibrary("./calculator-mac.so")
 
 class CustomConv2D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
@@ -112,9 +111,6 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
 
         self.custom_conv_layer_index = custom_conv_layer_index
-
-        cal.matrix_product.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
-        cal.matrix_product.restype = ctypes.c_float
         
         # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
         self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, bias=False,)
