@@ -59,13 +59,11 @@ for epoch in range(NUM_EPOCHS):
     avg_loss = running_loss / len(train_loader)
     print(f"✅ Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
 
-    # 모델 저장
-    torch.save(model.state_dict(), f'resnet-model_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
-
     # 조기 종료 체크 (여기선 train_loss 기반이지만 val_loss가 있으면 교체 가능)
     early_stopping(avg_loss)
     if early_stopping.early_stop:
         print(f"⛔ Early stopping at epoch {epoch+1}")
+        torch.save(model.state_dict(), f'resnet-model_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
         break
     elif epoch + 1 == NUM_EPOCHS:
         torch.save(model.state_dict(), f'resnet-model_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
