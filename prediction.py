@@ -1,5 +1,6 @@
 import torch
 from nets.resnet50 import ResNet,Bottleneck
+from nets.resnet50_2 import ResNet2, Bottleneck2
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
@@ -10,11 +11,11 @@ from tqdm import tqdm
 
 # Load model
 # Path to the pretrained model
-PATH = './weights/resnet-model-epoch19.pth'
+PATH = './weights2/resnet-model_cusin-1-epoch-20.pth'
 # Ask user for batch size
 # Batch_Size = int(input('The number of handwritten font images predicted each times：'))
 Batch_Size = 3
-model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=1)
+model = ResNet2(Bottleneck2, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=1)
 model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
 model = model.cpu()
 model.eval()

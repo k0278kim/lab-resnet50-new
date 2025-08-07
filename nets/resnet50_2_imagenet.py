@@ -31,7 +31,7 @@ class Tile(nn.Module):
     def forward(self, x):
         return x.repeat_interleave(self.reps, dim=self.dim)
 
-class Bottleneck2(nn.Module):
+class Bottleneck2_imagenet(nn.Module):
     '''
     Contains three types of convolutional layers
     conv1-Number of compression channels
@@ -46,7 +46,7 @@ class Bottleneck2(nn.Module):
     skip_expansion = 2
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4):
-        super(Bottleneck2, self).__init__()
+        super(Bottleneck2_imagenet, self).__init__()
 
         self.use_custom_conv = use_custom_conv
         
@@ -112,16 +112,16 @@ class Bottleneck2(nn.Module):
         return out
 
 
-class ResNet2(nn.Module):
+class ResNet2_imagenet(nn.Module):
     def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
         
         self.inplanes = 64
-        super(ResNet2, self).__init__()
+        super(ResNet2_imagenet, self).__init__()
 
         self.custom_conv_layer_index = custom_conv_layer_index
         
         # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, bias=False,)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, bias=False,)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
