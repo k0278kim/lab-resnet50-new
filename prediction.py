@@ -14,10 +14,13 @@ from tqdm import tqdm
 PATH = './weights2/resnet-model_cusin-1_epoch-20.pth'
 # Ask user for batch size
 # Batch_Size = int(input('The number of handwritten font images predicted each times：'))
-Batch_Size = 512
+Batch_Size = 5
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 model = ResNet2(Bottleneck2, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=1)
-model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu')))
-model = model.cpu()
+model.load_state_dict(torch.load(PATH, map_location=device))
+model = model.to(device)
 model.eval()
 
 #Load test dataset
@@ -35,8 +38,8 @@ with torch.no_grad():
     for images, labels in pbar:
         if (n < total_n):
             # print(f"\nBatch {i}: loaded")
-            images = images.cpu()
-            labels = labels.cpu()
+            images = images.to(device)
+            labels = labels.to(device)
             
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
