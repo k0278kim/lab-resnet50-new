@@ -14,7 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 # 하이퍼파라미터
-BATCH_SIZE = 512
+BATCH_SIZE = 256
 NUM_EPOCHS = 20
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
@@ -22,7 +22,9 @@ NUM_WORKERS = 0
 CUSTOM_CONV_LAYER_INDEX = 1
 
 # 모델 초기화
-model = ResNet2_imagenet(Bottleneck2_imagenet, [3, 4, 6, 3], num_classes=1000, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+model = ResNet2_imagenet(Bottleneck2_imagenet, [3, 4, 6, 3], num_classes=1000, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX)
+model = torch.nn.DataParallel(model)
+model = model.to(device)
 
 # 손실함수 및 옵티마이저
 criterion = nn.CrossEntropyLoss()
