@@ -121,7 +121,7 @@ class ResNet2(nn.Module):
         self.custom_conv_layer_index = custom_conv_layer_index
         
         # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, bias=False,)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, bias=False,)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
