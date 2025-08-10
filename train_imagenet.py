@@ -18,7 +18,7 @@ BATCH_SIZE = 64
 NUM_EPOCHS = 1
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
-NUM_WORKERS = 2
+NUM_WORKERS = 1
 CUSTOM_CONV_LAYER_INDEX = 1
 
 # 모델 초기화
@@ -37,7 +37,7 @@ transform = transforms.Compose([
 ])
 
 train_dataset = datasets.ImageFolder("/data/imagenet/train", transform=transform)
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=False)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 테스트 데이터셋
 # test_dataset = datasets.ImageFolder("/data/imagenet/val", transform=transform)
