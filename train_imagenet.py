@@ -14,11 +14,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 # 하이퍼파라미터
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 NUM_EPOCHS = 20
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
-NUM_WORKERS = 0
+NUM_WORKERS = 12
 CUSTOM_CONV_LAYER_INDEX = 1
 
 # 모델 초기화
@@ -38,7 +38,7 @@ transform = transforms.Compose([
 ])
 
 train_dataset = datasets.ImageFolder("/data/imagenet/train", transform=transform)
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 테스트 데이터셋
 # test_dataset = datasets.ImageFolder("/data/imagenet/val", transform=transform)
