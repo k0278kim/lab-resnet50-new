@@ -113,7 +113,7 @@ class Bottleneck2(nn.Module):
 
 
 class ResNet2(nn.Module):
-    def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
+    def __init__(self, block, layers, num_classes=1000, custom_conv_layer_index=1):
         
         self.inplanes = 64
         super(ResNet2, self).__init__()
@@ -121,7 +121,7 @@ class ResNet2(nn.Module):
         self.custom_conv_layer_index = custom_conv_layer_index
         
         # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, bias=False,)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, bias=False,)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
@@ -136,16 +136,6 @@ class ResNet2(nn.Module):
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
     def _make_layer(self, block, planes, blocks, skip_planes, stride=1, layer_index=1, use_custom_planes=16):
-        '''
-        Used to construct a stack of Conv Block and Identity Block
-        :param block:就是上面的Bottleneck，Used to implement the most basic residual block structure in resnet50
-        :param planes:Number of output channels
-        :param blocks:Residual block repetition times
-        :param stride:step size
-        :return:
-        Constructed Conv Block & Identity Block Stacked network structure
-
-        ''' 
         downsample = None
         use_custom = (layer_index == self.custom_conv_layer_index)
 
