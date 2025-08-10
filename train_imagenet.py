@@ -14,8 +14,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 # 하이퍼파라미터
-BATCH_SIZE = 128
-NUM_EPOCHS = 20
+BATCH_SIZE = 64
+NUM_EPOCHS = 1
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
 NUM_WORKERS = 0
