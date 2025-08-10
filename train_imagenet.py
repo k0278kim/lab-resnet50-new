@@ -23,7 +23,6 @@ CUSTOM_CONV_LAYER_INDEX = 1
 
 # 모델 초기화
 model = ResNet2_imagenet(Bottleneck2_imagenet, [3, 4, 6, 3], num_classes=1000, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX)
-model = torch.nn.DataParallel(model)
 model = model.to(device)
 
 # 손실함수 및 옵티마이저
