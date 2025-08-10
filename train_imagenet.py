@@ -37,7 +37,7 @@ transform = transforms.Compose([
 ])
 
 train_dataset = datasets.ImageFolder("/data/imagenet/train", transform=transform)
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=False)
 
 # 조기 종료 조건 초기화
 early_stopping = EarlyStopping(patience=5, delta=0.001)
