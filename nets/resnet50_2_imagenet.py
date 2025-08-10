@@ -113,7 +113,7 @@ class Bottleneck2_imagenet(nn.Module):
 
 
 class ResNet2_imagenet(nn.Module):
-    def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
+    def __init__(self, block, layers, num_classes=1000, custom_conv_layer_index=1):
         
         self.inplanes = 64
         super(ResNet2_imagenet, self).__init__()
