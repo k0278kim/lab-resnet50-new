@@ -4,7 +4,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from nets.resnet50 import ResNet, Bottleneck
-from nets.resnet50_2 import ResNet2, Bottleneck
+from nets.resnet50_2 import ResNet2, Bottleneck2
 from nets.early_stopping import EarlyStopping
 
 # 하이퍼파라미터
@@ -20,7 +20,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 # 모델 초기화
-model = ResNet2(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+model = ResNet2(Bottleneck2, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 
 # 손실함수 및 옵티마이저
 criterion = nn.CrossEntropyLoss()
