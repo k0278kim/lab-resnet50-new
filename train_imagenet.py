@@ -39,8 +39,8 @@ train_dataset = datasets.ImageFolder("/data/imagenet/train", transform=transform
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 # 테스트 데이터셋
-test_dataset = datasets.ImageFolder("/data/imagenet/val", transform=transform)
-test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+# test_dataset = datasets.ImageFolder("/data/imagenet/val", transform=transform)
+# test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 # 조기 종료 조건 초기화
 early_stopping = EarlyStopping(patience=5, delta=0.001)
