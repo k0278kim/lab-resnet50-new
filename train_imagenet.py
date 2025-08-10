@@ -3,8 +3,11 @@ import torch.nn as nn
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from nets.resnet50 import ResNet, Bottleneck
+from nets.resnet50_2 import ResNet2, Bottleneck2
 from nets.resnet50_2_imagenet import ResNet2_imagenet, Bottleneck2_imagenet
 from nets.early_stopping import EarlyStopping
+import torchvision.transforms as transforms
 
 # CUDA 설정
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -26,9 +29,6 @@ model = model.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-# AMP용 GradScaler 초기화
-scaler = torch.cuda.amp.GradScaler()
-
 # 학습 데이터셋
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -37,7 +37,11 @@ transform = transforms.Compose([
 ])
 
 train_dataset = datasets.ImageFolder("/data/imagenet/train", transform=transform)
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=False)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
+
+# 테스트 데이터셋
+# test_dataset = datasets.ImageFolder("/data/imagenet/val", transform=transform)
+# test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 # 조기 종료 조건 초기화
 early_stopping = EarlyStopping(patience=5, delta=0.001)
@@ -52,15 +56,10 @@ for epoch in range(NUM_EPOCHS):
         images, labels = images.to(device), labels.to(device)
 
         optimizer.zero_grad()
-
-        with torch.cuda.amp.autocast():
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-
-        # AMP 스케일러로 backward와 step 처리
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
 
         running_loss += loss.item()
         pbar.set_postfix({'loss': f"{loss.item():.4f}"})
@@ -68,7 +67,7 @@ for epoch in range(NUM_EPOCHS):
     avg_loss = running_loss / len(train_loader)
     print(f"✅ Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
 
-    # 조기 종료 체크 (여기선 train_loss 기반)
+    # 조기 종료 체크 (여기선 train_loss 기반이지만 val_loss가 있으면 교체 가능)
     early_stopping(avg_loss)
     if early_stopping.early_stop:
         print(f"⛔ Early stopping at epoch {epoch+1}")
