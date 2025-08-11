@@ -19,8 +19,8 @@ BATCH_SIZE = 32
 NUM_EPOCHS = 1
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
-RESUME_PATH = "./resnet-model_imagenet-1_epoch-1.pth"  # 이전 학습 모델 경로
-NUM_WORKERS = 3
+RESUME_PATH = "checkpoint.pth"  # 이전 학습 모델 경로
+NUM_WORKERS = 4
 CUSTOM_CONV_LAYER_INDEX = 1
 
 # 모델 초기화
@@ -82,7 +82,16 @@ for epoch in range(NUM_EPOCHS):
     early_stopping(avg_loss)
     if early_stopping.early_stop:
         print(f"⛔ Early stopping at epoch {epoch+1}")
-        torch.save(model.state_dict(), f'resnet-model_imagenet-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
+        torch.save({
+    "epoch": epoch,
+    "model_state_dict": model.state_dict(),
+    "optimizer_state_dict": optimizer.state_dict()
+}, "checkpoint.pth")
+
         break
     elif epoch + 1 == NUM_EPOCHS:
-        torch.save(model.state_dict(), f'resnet-model_imagenet-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
+        torch.save({
+    "epoch": epoch,
+    "model_state_dict": model.state_dict(),
+    "optimizer_state_dict": optimizer.state_dict()
+}, "checkpoint.pth")
