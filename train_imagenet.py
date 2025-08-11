@@ -8,6 +8,7 @@ from nets.resnet50_2 import ResNet2, Bottleneck2
 from nets.resnet50_2_imagenet import ResNet2_imagenet, Bottleneck2_imagenet
 from nets.early_stopping import EarlyStopping
 import torchvision.transforms as transforms
+import os
 
 # CUDA 설정
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -18,6 +19,7 @@ BATCH_SIZE = 32
 NUM_EPOCHS = 1
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
+RESUME_PATH = "./resnet-model_imagenet-1_epoch-1.pth"  # 이전 학습 모델 경로
 NUM_WORKERS = 3
 CUSTOM_CONV_LAYER_INDEX = 1
 
@@ -28,6 +30,15 @@ model = model.to(device)
 # 손실함수 및 옵티마이저
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+start_epoch = 0
+if os.path.exists(RESUME_PATH):
+    print(f"🔄 Loading checkpoint from {RESUME_PATH}...")
+    checkpoint = torch.load(RESUME_PATH, map_location=device)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    start_epoch = checkpoint["epoch"] + 1
+    print(f"✅ Resumed training from epoch {start_epoch}")
 
 # 학습 데이터셋
 transform = transforms.Compose([
