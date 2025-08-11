@@ -192,23 +192,15 @@ class ResNet2(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
-        print("After maxpool:", x.shape)
 
         x = self.layer1(x)
-        print("After layer1:", x.shape)
         x = self.layer2(x)
-        print("After layer2:", x.shape)
         x = self.layer3(x)
-        print("After layer3:", x.shape)
         x = self.layer4(x)
-        print("After layer4:", x.shape)
 
-        print("Before avgpool:", x.shape)
         x = self.avgpool(x)
-        print("After avgpool:", x.shape)
 
         x = x.view(x.size(0), -1)
-        print("After flatten:", x.shape)
 
         x = self.fc(x)
         return x
