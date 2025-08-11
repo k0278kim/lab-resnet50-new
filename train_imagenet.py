@@ -17,10 +17,10 @@ from nets.early_stopping import EarlyStopping
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", DEVICE)
 
-BATCH_SIZE = 64            # GPU 메모리에 따라 조절 (현재 64가 가능한 상태라면 OK)
+BATCH_SIZE = 32           # GPU 메모리에 따라 조절 (현재 64가 가능한 상태라면 OK)
 NUM_EPOCHS = 1
 LEARNING_RATE = 1e-3
-NUM_WORKERS = 1            # 공유메모리 이슈 있으면 0 또는 1로 낮춤
+NUM_WORKERS = 2            # 공유메모리 이슈 있으면 0 또는 1로 낮춤
 PIN_MEMORY = False         # shm 이슈 있으면 False (속도는 약간 느려짐)
 ACCUM_STEPS = 1            # gradient accumulation steps (메모리가 부족하면 >1로 설정)
 CUSTOM_CONV_LAYER_INDEX = 1
