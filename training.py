@@ -8,7 +8,7 @@ from nets.resnet50_2 import ResNet2, Bottleneck2
 from nets.early_stopping import EarlyStopping
 
 # 하이퍼파라미터
-BATCH_SIZE = 512
+BATCH_SIZE = 1024
 NUM_EPOCHS = 20
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
