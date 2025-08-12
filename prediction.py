@@ -42,8 +42,8 @@ with torch.no_grad():
             labels = labels.to(device)
             
             outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            
+            _, predicted = torch.max(outputs.detach(), 1)
+            print(f"predicted: {predicted} / labels: {labels} / outputs.data: {outputs.detach()}")
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             accuracy = 100 * correct / total
