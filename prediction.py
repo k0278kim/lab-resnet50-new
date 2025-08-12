@@ -14,7 +14,7 @@ from tqdm import tqdm
 PATH = './weights2/resnet-model_cusin-1_epoch-20.pth'
 # Ask user for batch size
 # Batch_Size = int(input('The number of handwritten font images predicted each times：'))
-Batch_Size = 5
+Batch_Size = 1
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,7 +32,7 @@ test_loader  = DataLoader(dataset=test_dataset, batch_size=Batch_Size, shuffle=F
 correct = 0
 total = 0
 n = 0
-total_n = 10000
+total_n = 1
 with torch.no_grad():
     pbar = tqdm(test_loader, total=len(test_loader), desc="Testing")
     for images, labels in pbar:
