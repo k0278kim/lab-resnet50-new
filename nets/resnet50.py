@@ -163,8 +163,7 @@ class ResNet(nn.Module):
             # print(f'use_custom: {use_custom}')
 
             if use_custom:
-                # custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
-                custom_conv = nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
+                custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
                 downsample = nn.Sequential(
                     nn.BatchNorm2d(skip_planes),
                     nn.Conv2d(skip_planes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
