@@ -5,9 +5,6 @@ import numpy as np
 import ctypes   # Load the shared library
 import matplotlib.pyplot as plt
 
-from nets.ctypes.typedict import *
-from nets.ctypes.utils import *
-
 class CustomConv2D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
         super(CustomConv2D, self).__init__()
