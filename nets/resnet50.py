@@ -30,16 +30,8 @@ class CustomConv2D(nn.Module):
     #         result.append(nn.Conv2d(batch, weight, stride)[0])
     #     return torch.from_numpy(np.array(result, dtype=torch.float32))
     
-class EncryptData(nn.Module):
-    def __init__(self, stride):
-        super(EncryptData, self).__init__()
-        self.stride = stride
-
-    def encrypt_data(self, input, batch_shape):
-        return input
-
-    def forward(self, x, batch_shape):
-        return self.encrypt_data(x, batch_shape)
+def encrypt_data(self, input, batch_shape, stride):
+    return input
 
 class Bottleneck(nn.Module):
     '''
@@ -59,9 +51,9 @@ class Bottleneck(nn.Module):
 
         self.use_custom_conv = use_custom_conv
         self.custom_conv = custom_conv
+        self.stride = stride
 
         if use_custom_conv:
-            self.encrypt_data = EncryptData(stride=stride)
             self.conv1 = CustomConv2D(inplanes, planes, kernel_size=1, stride=stride, bias=False)   # 1x1 conv
             self.bn1 = nn.BatchNorm2d(planes)
             # print(f'bottleneck conv1: ({inplanes} -> {planes})')
@@ -106,7 +98,7 @@ class Bottleneck(nn.Module):
         batch_shape = [1, x.shape[1], x.shape[2], x.shape[3]]
 
         if self.use_custom_conv:
-            enc = self.encrypt_data(x, batch_shape)
+            enc = encrypt_data(x, batch_shape, self.stride)
             out = self.conv1(enc, batch_shape)
         else:
             out = self.conv1(x)
@@ -171,7 +163,8 @@ class ResNet(nn.Module):
             # print(f'use_custom: {use_custom}')
 
             if use_custom:
-                custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
+                # custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
+                custom_conv = nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
                 downsample = nn.Sequential(
                     nn.BatchNorm2d(skip_planes),
                     nn.Conv2d(skip_planes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
