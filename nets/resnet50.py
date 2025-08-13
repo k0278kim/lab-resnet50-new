@@ -17,10 +17,10 @@ class CustomConv2D(nn.Module):
         self.weight = nn.Parameter(torch.randn(out_channels, in_channels, kernel_size, kernel_size) * 0.1)
         self.bias = nn.Parameter(torch.zeros(out_channels)) if bias else None
 
-    def forward(self, x_padded, in_height, in_width):
-        return self.custom_conv2d(x_padded, in_height, in_width, self.weight, self.bias, self.stride, self.padding)
+    def forward(self, x, batch_shape):
+        return self.custom_conv2d(x, self.weight, batch_shape, self.bias, self.stride, self.padding)
 
-    def custom_conv2d(self):
+    def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
         return nn.Conv2d(self.in_channels, self.out_channels, kernel_size=self.kernel_size, stride=self.stride, bias=self.bias)
 
     # def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
