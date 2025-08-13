@@ -22,13 +22,11 @@ class CustomConv2D(nn.Module):
     def custom_conv2d(self):
         return nn.Conv2d(self.in_channels, self.out_channels, kernel_size=self.kernel_size, stride=self.stride, bias=self.bias)
     
-class Tile(nn.Module):
-    def __init__(self, dim: int, reps: int):
-        super().__init__()
+class Tile:
+    def __init__(self, dim, reps):
         self.dim = dim
         self.reps = reps
-
-    def forward(self, x):
+    def apply(self, x):
         return x.repeat_interleave(self.reps, dim=self.dim)
 
 class Bottleneck2(nn.Module):
@@ -45,10 +43,11 @@ class Bottleneck2(nn.Module):
     expansion = 4
     skip_expansion = 2
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4, tile=None):
         super(Bottleneck2, self).__init__()
 
         self.use_custom_conv = use_custom_conv
+        self.tile = tile
         
         # use_custom_conv: 암호화 내적을 하는가?
         if use_custom_conv:
@@ -106,6 +105,8 @@ class Bottleneck2(nn.Module):
 
         if self.downsample is not None:
             residual = self.downsample(x)
+            if self.tile is not None:
+                residual = self.tile.apply(residual)
 
         out += residual
         out = self.relu(out)
@@ -135,6 +136,8 @@ class ResNet2(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
+        self.tile = None
+
     def _make_layer(self, block, planes, blocks, skip_planes, stride=1, layer_index=1, use_custom_planes=16):
         downsample = None
         use_custom = (layer_index == self.custom_conv_layer_index)
@@ -148,9 +151,9 @@ class ResNet2(nn.Module):
                 downsample = nn.Sequential(
                     nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
                     nn.BatchNorm2d(skip_planes),
-                    Tile(dim=1, reps=int(planes * block.expansion / skip_planes)),
                     # nn.BatchNorm2d(planes * block.expansion),
                 )
+                self.tile = Tile(dim=1, reps=int(planes * block.expansion / skip_planes))
                 # print(f'skip_connections: ({self.inplanes} -> {skip_planes})')
                 # print(f'skip_connections: ({skip_planes} -> {planes * block.expansion})')
                 
@@ -167,7 +170,7 @@ class ResNet2(nn.Module):
 
         if use_custom:
             # print(f'<use custom> make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {use_custom_planes}')
-            layers.append(block(self.inplanes, use_custom_planes, stride, downsample, use_custom_conv=use_custom, planes_per_use_custom_planes=planes // use_custom_planes))
+            layers.append(block(self.inplanes, use_custom_planes, stride, downsample, use_custom_conv=use_custom, planes_per_use_custom_planes=planes // use_custom_planes, tile=self.tile))
             self.inplanes = use_custom_planes * block.expansion * (planes // use_custom_planes)
         
         else:
