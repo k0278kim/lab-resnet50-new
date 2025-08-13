@@ -157,6 +157,7 @@ class ResNet2_imagenet(nn.Module):
                 print(planes * block.expansion / skip_planes, stride, skip_planes, planes * block.expansion)
                 downsample = nn.Sequential(
                     nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
+                    nn.BatchNorm2d(skip_planes),
                     Tile(dim=1, reps=int(planes * block.expansion / skip_planes)),
                     nn.BatchNorm2d(planes * block.expansion),
                 )
