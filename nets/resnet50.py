@@ -35,7 +35,7 @@ class EncryptData(nn.Module):
         secData = []
         for batch in input:
             secData.append(batch)
-        return torch.tensor(np.array(secData), dtype=torch.float32)
+        return secData.to(torch.float32)
 
     def forward(self, x, batch_shape):
         return self.encrypt_data(x, batch_shape)
