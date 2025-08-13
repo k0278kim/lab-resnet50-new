@@ -30,7 +30,7 @@ class CustomConv2D(nn.Module):
     #         result.append(nn.Conv2d(batch, weight, stride)[0])
     #     return torch.from_numpy(np.array(result, dtype=torch.float32))
     
-def encrypt_data(self, input, batch_shape, stride):
+def encrypt_data(input, batch_shape, stride):
     return input
 
 class Bottleneck(nn.Module):
