@@ -102,7 +102,7 @@ class Bottleneck(nn.Module):
         residual = x
 
         enc = None
-        batch_shape = [1, input.shape[1], input.shape[2], input.shape[3]]
+        batch_shape = [1, x.shape[1], x.shape[2], x.shape[3]]
 
         if self.use_custom_conv:
             enc = self.encrypt_data(x, batch_shape)

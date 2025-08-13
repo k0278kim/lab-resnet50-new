@@ -18,7 +18,7 @@ Batch_Size = 1
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = ResNet2(Bottleneck2, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=1)
+model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=1)
 model.load_state_dict(torch.load(PATH, map_location=device))
 model = model.to(device)
 model.eval()
