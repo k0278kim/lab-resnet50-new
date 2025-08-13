@@ -149,7 +149,7 @@ class ResNet2(nn.Module):
                     nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
                     nn.BatchNorm2d(skip_planes),
                     Tile(dim=1, reps=int(planes * block.expansion / skip_planes)),
-                    nn.BatchNorm2d(planes * block.expansion),
+                    # nn.BatchNorm2d(planes * block.expansion),
                 )
                 # print(f'skip_connections: ({self.inplanes} -> {skip_planes})')
                 # print(f'skip_connections: ({skip_planes} -> {planes * block.expansion})')
