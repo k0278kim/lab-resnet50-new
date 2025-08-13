@@ -2,7 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import ctypes   # Load the shared library  
+import ctypes   # Load the shared library
+import matplotlib.pyplot as plt
+
+from nets.ctypes.typedict import *
+from nets.ctypes.utils import *
 
 class CustomConv2D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
@@ -16,12 +20,18 @@ class CustomConv2D(nn.Module):
         self.weight = nn.Parameter(torch.randn(out_channels, in_channels, kernel_size, kernel_size) * 0.1)
         self.bias = nn.Parameter(torch.zeros(out_channels)) if bias else None
 
-    def forward(self, x_padded, in_height, in_width):
-        return self.custom_conv2d(x_padded, in_height, in_width, self.weight, self.bias, self.stride, self.padding)
+    def forward(self, x, batch_shape):
+        return self.custom_conv2d(x, self.weight, batch_shape, self.bias, self.stride, self.padding)
 
-    def custom_conv2d(self, input_padded, in_height, in_width, weight, bias=None, stride=1, padding=0):
-        return
-
+    def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
+        return nn.Conv2d(self.in_channels, self.out_channels, kernel_size=self.kernel_size, stride=self.stride, bias=self.bias)
+    
+# def encrypt_data(input, stride):
+#     secData = []
+#     batch_shape = [1, input.shape[1], input.shape[2], input.shape[3]]
+#     for batch in input:
+#         secData.append(loadSecDataConv1x1(batch, batch_shape, stride))
+#     return torch.from_numpy(np.array(secData, dtype=torch.float32))
 
 class Bottleneck(nn.Module):
     '''
@@ -30,31 +40,30 @@ class Bottleneck(nn.Module):
     conv2-Extract features
     conv3-extended number of channels
     This structure can better extract features, deepen the network, and reduce the number of network parameters。
-    inplanes - in_channels
+    inplanes - in_channels 
     planes = out_channels
     '''
 
     expansion = 4
-    skip_expansion = 2
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4, custom_conv=None):
         super(Bottleneck, self).__init__()
 
         self.use_custom_conv = use_custom_conv
-        
-        # use_custom_conv: 암호화 내적을 하는가?
+        self.custom_conv = custom_conv
+
         if use_custom_conv:
-            self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)   # 1x1 conv
+            self.conv1 = CustomConv2D(inplanes, planes, kernel_size=1, stride=stride, bias=False)   # 1x1 conv
             self.bn1 = nn.BatchNorm2d(planes)
-            print(f'bottleneck conv1: ({inplanes} -> {planes})')
+            # print(f'bottleneck conv1: ({inplanes} -> {planes})')
             
             self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
             self.bn2 = nn.BatchNorm2d(planes)
-            print(f'bottleneck conv2: ({planes} -> {planes})')
+            # print(f'bottleneck conv2: ({planes} -> {planes})')
             
             self.conv3 = nn.Conv2d(planes, planes * 4 * planes_per_use_custom_planes, kernel_size=1, bias=False)
             self.bn3 = nn.BatchNorm2d(planes * 4 * planes_per_use_custom_planes)
-            print(f'bottleneck conv3: ({planes} -> {planes * 4 * planes_per_use_custom_planes})')
+            # print(f'bottleneck conv3: ({planes} -> {planes * 4 * planes_per_use_custom_planes})')
             
             self.relu = nn.ReLU(inplace=True)
             self.downsample = downsample
@@ -64,56 +73,66 @@ class Bottleneck(nn.Module):
             self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)
 
             self.bn1 = nn.BatchNorm2d(planes)
-            print(f'bottleneck conv1: ({inplanes} -> {planes})')
+            # print(f'bottleneck conv1: ({inplanes} -> {planes})')
             
             self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
             self.bn2 = nn.BatchNorm2d(planes)
-            print(f'bottleneck conv2: ({planes} -> {planes})')
+            # print(f'bottleneck conv2: ({planes} -> {planes})')
             
             self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
             self.bn3 = nn.BatchNorm2d(planes * 4)
-            print(f'bottleneck conv3: ({planes} -> {planes * 4})')
+            # print(f'bottleneck conv3: ({planes} -> {planes * 4})')
             
             self.relu = nn.ReLU(inplace=True)
             self.downsample = downsample
             self.stride = stride
 
-        print('====')
-
+        # print('====')
 
         
     def forward(self, x):
         residual = x
 
-        out = self.conv1(x)
+        enc = None
+        batch_shape = [1, input.shape[1], input.shape[2], input.shape[3]]
+
+        if self.use_custom_conv:
+            # enc = encrypt_data(x)
+            out = self.conv1(x, batch_shape)
+        else:
+            out = self.conv1(x)
+
         out = self.bn1(out)
         out = self.relu(out)
 
-        out = self.conv2(out)
+        out = self.conv2(out)                                                                   # 3x3 conv  
         out = self.bn2(out)
         out = self.relu(out)
 
-        out = self.conv3(out)
+        out = self.conv3(out)                                                                   # 1x1 conv                                              
         out = self.bn3(out)
 
+        # print(np.array(out).shape)
+
         if self.downsample is not None:
-            residual = self.downsample(x)
+            res = self.custom_conv(enc, batch_shape)
+            residual = self.downsample(res)
 
         out += residual
         out = self.relu(out)
         return out
-
+ 
 
 class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
         
         self.inplanes = 64
+        self.custom_conv_layer_index = custom_conv_layer_index
         super(ResNet, self).__init__()
 
         self.custom_conv_layer_index = custom_conv_layer_index
         
-        # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, bias=False,)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=2, bias=False)                    #TODO: original conv 1x1
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
@@ -127,101 +146,61 @@ class ResNet(nn.Module):
         self.avgpool = nn.AvgPool2d(2)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
+
     def _make_layer(self, block, planes, blocks, skip_planes, stride=1, layer_index=1, use_custom_planes=16):
-        '''
-        Used to construct a stack of Conv Block and Identity Block
-        :param block:就是上面的Bottleneck，Used to implement the most basic residual block structure in resnet50
-        :param planes:Number of output channels
-        :param blocks:Residual block repetition times
-        :param stride:step size
-        :return:
-        Constructed Conv Block & Identity Block Stacked network structure
-
-        ''' 
+        
         downsample = None
+        custom_conv = None
         use_custom = (layer_index == self.custom_conv_layer_index)
+        
+        if stride != 1 or self.inplanes != planes * block.expansion:# block.expansion=4
 
-        if stride != 1 or self.inplanes != planes * block.expansion:
-
-            # 제한: 64 (32->256)
-            # nn.Conv2d(64, 32)
-            # nn.BatchNorm2d(32 * 2)
-            # nn.Conv2d(32, 256)
-            # nn.BatchNorm2d(256 * 2)
-            # out3: (1,256,15,15)
-
-            # 제한: 128 (64->512)
-            # nn.Conv2d(128, 64)
-            # nn.BatchNorm2d(64 * 2)
-            # nn.Conv2d(64, 512)
-            # nn.BatchNorm2d(512 * 2)
-            # out3: (1,512,8,8)
-
-            # 제한: 256 (128->1024)
-            # nn.Conv2d(256, 128)
-            # nn.BatchNorm2d(128 * 2)
-            # nn.Conv2d(128, 1024)
-            # nn.BatchNorm2d(1024 * 2)
-            # out3: (1,1024,4,4)
-
-            # 제한: 512 (256->2048)
-            # nn.Conv2d(512, 256)
-            # nn.BatchNorm2d(256*2)
-            # nn.Conv2d(256, 2048)
-            # nn.BatchNorm2d(2048 * 2)
-            # out3: (1,2048,2,2)
-
-            print(f'use_custom: {use_custom}')
+            # print(f'use_custom: {use_custom}')
 
             if use_custom:
+                custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
                 downsample = nn.Sequential(
-                    nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
                     nn.BatchNorm2d(skip_planes),
                     nn.Conv2d(skip_planes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
                     nn.BatchNorm2d(planes * block.expansion)
                 )
-                print(f'skip_connections: ({self.inplanes} -> {skip_planes})')
-                print(f'skip_connections: ({skip_planes} -> {planes * block.expansion})')
-                
+                # print(f'skip_connections: ({self.inplanes} -> {skip_planes})')
+                # print(f'skip_connections: ({skip_planes} -> {planes * block.expansion})')
             else:
                 downsample = nn.Sequential(
                     nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
                     nn.BatchNorm2d(planes * block.expansion)
                 )
-
-                print(f'skip_connections: ({self.inplanes} -> {planes * block.expansion})')
-            
+                # print(f'skip_connections: ({self.inplanes} -> {planes * block.expansion})')
        
         layers = []
 
         if use_custom:
-            print(f'<use custom> make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {use_custom_planes}')
-            layers.append(block(self.inplanes, use_custom_planes, stride, downsample, use_custom_conv=use_custom, planes_per_use_custom_planes=planes // use_custom_planes))
+            # print(f'<use custom> make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {use_custom_planes}')
+            layers.append(block(self.inplanes, use_custom_planes, stride, downsample, use_custom_conv=use_custom, planes_per_use_custom_planes=planes // use_custom_planes, custom_conv=custom_conv))
             self.inplanes = use_custom_planes * block.expansion * (planes // use_custom_planes)
         
         else:
-            print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
+            # print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
             layers.append(block(self.inplanes, planes, stride, downsample, use_custom_conv=use_custom))
             self.inplanes = planes * block.expansion
 
         for i in range(1, blocks):
-            print(f'make block - {i + 1} : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
+            # print(f'make block - {i + 1} : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
             layers.append(block(self.inplanes, planes))
 
-        print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes} / 최종 채널 {planes * block.expansion}')
+        # print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes} / 최종 채널 {planes * block.expansion}')
         
         
-        print("================")
+        # print("================")
 
         return nn.Sequential(*layers)
+    
+    
 
     def forward(self, x):
-        padding = 2
-        x_padded = F.pad(x, (padding, padding, padding, padding))
-        _, _, in_height, in_width = x.shape
-    
-        # x = self.conv1(x_padded, in_height, in_width) # FIXME: custom_conv
-        x = self.conv1(x_padded)
+        
+        x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
@@ -235,15 +214,3 @@ class ResNet(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
-
-
-# def resnet50():
-#     model = ResNet(Bottleneck, [3, 4, 6, 3])
-    
-#     features = list([model.conv1, model.bn1, model.relu, model.maxpool, model.layer1, model.layer2, model.layer3])
-    
-#     classifier = list([model.layer4, model.avgpool])
-
-#     features = nn.Sequential(*features)
-#     classifier = nn.Sequential(*classifier)
-#     return features, classifier
