@@ -8,11 +8,11 @@ from nets.resnet50_2 import ResNet2, Bottleneck2
 from nets.early_stopping import EarlyStopping
 
 # 하이퍼파라미터
-BATCH_SIZE = 1024
+BATCH_SIZE = 32
 NUM_EPOCHS = 20
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
-NUM_WORKERS = 4
+NUM_WORKERS = 0
 CUSTOM_CONV_LAYER_INDEX = 1
 
 # CUDA 설정
@@ -20,7 +20,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 # 모델 초기화
-model = ResNet2(Bottleneck2, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 
 # 손실함수 및 옵티마이저
 criterion = nn.CrossEntropyLoss()

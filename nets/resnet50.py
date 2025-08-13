@@ -21,7 +21,8 @@ class CustomConv2D(nn.Module):
         return self.custom_conv2d(x, self.weight, batch_shape, self.bias, self.stride, self.padding)
 
     def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
-        return nn.Conv2d(self.in_channels, self.out_channels, kernel_size=self.kernel_size, stride=self.stride, bias=self.bias)
+        return F.conv2d(input, weight, bias=bias, stride=stride, padding=padding)
+
 
     # def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
     #     result = []
@@ -123,8 +124,12 @@ class Bottleneck(nn.Module):
         # print(np.array(out).shape)
 
         if self.downsample is not None:
-            res = self.custom_conv(enc, batch_shape)
+            if self.custom_conv is not None:
+                res = self.custom_conv(enc, batch_shape)
+            else:
+                res = residual
             residual = self.downsample(res)
+
 
         out += residual
         out = self.relu(out)
