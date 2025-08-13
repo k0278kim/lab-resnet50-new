@@ -5,6 +5,9 @@ import numpy as np
 import ctypes   # Load the shared library
 import matplotlib.pyplot as plt
 
+from nets.ctypes.typedict import *
+from nets.ctypes.utils import *
+
 class CustomConv2D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
         super(CustomConv2D, self).__init__()
@@ -18,17 +21,27 @@ class CustomConv2D(nn.Module):
         self.bias = nn.Parameter(torch.zeros(out_channels)) if bias else None
 
     def forward(self, x, batch_shape):
-        return self.custom_conv2d(x, self.weight, batch_shape, self.bias, self.stride, self.padding)
-
-    def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
         return nn.Conv2d(self.in_channels, self.out_channels, kernel_size=self.kernel_size, stride=self.stride, bias=self.bias)
+
+    # def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
+    #     result = []
+    #     for batch in input:
+    #         result.append(nn.Conv2d(batch, weight, stride)[0])
+    #     return torch.from_numpy(np.array(result, dtype=torch.float32))
     
-# def encrypt_data(input, stride):
-#     secData = []
-#     batch_shape = [1, input.shape[1], input.shape[2], input.shape[3]]
-#     for batch in input:
-#         secData.append(loadSecDataConv1x1(batch, batch_shape, stride))
-#     return torch.from_numpy(np.array(secData, dtype=torch.float32))
+class EncryptData(nn.Module):
+    def __init__(self, stride):
+        super(EncryptData, self).__init__()
+        self.stride = stride
+
+    def encrypt_data(self, input, batch_shape):
+        secData = []
+        for batch in input:
+            secData.append(batch)
+        return torch.from_numpy(np.array(secData, dtype=torch.float32))
+
+    def forward(self, x, batch_shape):
+        return self.encrypt_data(x, batch_shape)
 
 class Bottleneck(nn.Module):
     '''
@@ -50,6 +63,7 @@ class Bottleneck(nn.Module):
         self.custom_conv = custom_conv
 
         if use_custom_conv:
+            self.encrypt_data = EncryptData(stride=stride)
             self.conv1 = CustomConv2D(inplanes, planes, kernel_size=1, stride=stride, bias=False)   # 1x1 conv
             self.bn1 = nn.BatchNorm2d(planes)
             # print(f'bottleneck conv1: ({inplanes} -> {planes})')
@@ -94,8 +108,8 @@ class Bottleneck(nn.Module):
         batch_shape = [1, input.shape[1], input.shape[2], input.shape[3]]
 
         if self.use_custom_conv:
-            # enc = encrypt_data(x)
-            out = self.conv1(x, batch_shape)
+            enc = self.encrypt_data(x, batch_shape)
+            out = self.conv1(enc, batch_shape)
         else:
             out = self.conv1(x)
 
