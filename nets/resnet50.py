@@ -32,10 +32,7 @@ class EncryptData(nn.Module):
         self.stride = stride
 
     def encrypt_data(self, input, batch_shape):
-        secData = []
-        for batch in input:
-            secData.append(batch)
-        return secData.to(torch.float32)
+        return input
 
     def forward(self, x, batch_shape):
         return self.encrypt_data(x, batch_shape)
