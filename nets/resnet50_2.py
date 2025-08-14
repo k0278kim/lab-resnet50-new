@@ -16,12 +16,15 @@ class CustomConv2D(nn.Module):
         self.weight = nn.Parameter(torch.randn(out_channels, in_channels, kernel_size, kernel_size) * 0.1)
         self.bias = nn.Parameter(torch.zeros(out_channels)) if bias else None
 
-    def forward(self, x_padded, in_height, in_width):
-        return self.custom_conv2d(x_padded, in_height, in_width, self.weight, self.bias, self.stride, self.padding)
+    def forward(self, x, batch_shape):
+        return self.custom_conv2d(x, self.weight, batch_shape, self.bias, self.stride, self.padding)
 
-    def custom_conv2d(self):
-        return nn.Conv2d(self.in_channels, self.out_channels, kernel_size=self.kernel_size, stride=self.stride, bias=self.bias)
-    
+    def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
+        return F.conv2d(input, weight, bias=bias, stride=stride, padding=padding)
+
+def encrypt_data(input, batch_shape, stride):
+    return input
+
 class Tile:
     def __init__(self, dim, reps):
         self.dim = dim
@@ -43,15 +46,16 @@ class Bottleneck2(nn.Module):
     expansion = 4
     skip_expansion = 2
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4, tile=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4, tile=None, custom_conv=None):
         super(Bottleneck2, self).__init__()
 
         self.use_custom_conv = use_custom_conv
+        self.custom_conv = custom_conv
         self.tile = tile
         
         # use_custom_conv: 암호화 내적을 하는가?
         if use_custom_conv:
-            self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)   # 1x1 conv
+            self.conv1 = CustomConv2D(inplanes, planes, kernel_size=1, stride=stride, bias=False)   # 1x1 conv
             self.bn1 = nn.BatchNorm2d(planes)
             # print(f'bottleneck conv1: ({inplanes} -> {planes})')
             
@@ -92,7 +96,15 @@ class Bottleneck2(nn.Module):
     def forward(self, x):
         residual = x
 
-        out = self.conv1(x)
+        enc = None
+        batch_shape = [1, x.shape[1], x.shape[2], x.shape[3]]
+
+        if self.use_custom_conv:
+            enc = encrypt_data(x, batch_shape, self.stride)
+            out = self.conv1(enc, batch_shape)
+        else:
+            out = self.conv1(x)
+
         out = self.bn1(out)
         out = self.relu(out)
 
@@ -104,7 +116,11 @@ class Bottleneck2(nn.Module):
         out = self.bn3(out)
 
         if self.downsample is not None:
-            residual = self.downsample(x)
+            if self.custom_conv is not None:
+                res = self.custom_conv(enc, batch_shape)
+            else:
+                res = residual
+            residual = self.downsample(res)
             if self.tile is not None:
                 residual = self.tile.apply(residual)
 
@@ -114,7 +130,7 @@ class Bottleneck2(nn.Module):
 
 
 class ResNet2(nn.Module):
-    def __init__(self, block, layers, num_classes=1000, custom_conv_layer_index=1):
+    def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
         
         self.inplanes = 64
         super(ResNet2, self).__init__()
@@ -143,19 +159,12 @@ class ResNet2(nn.Module):
         use_custom = (layer_index == self.custom_conv_layer_index)
 
         if stride != 1 or self.inplanes != planes * block.expansion:
-
-            # print(f'use_custom: {use_custom}')
-
             if use_custom:
-                # print(planes * block.expansion / skip_planes, stride, skip_planes, planes * block.expansion)
+                custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
                 downsample = nn.Sequential(
-                    nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
                     nn.BatchNorm2d(skip_planes),
-                    # nn.BatchNorm2d(planes * block.expansion),
                 )
                 self.tile = Tile(dim=1, reps=int(planes * block.expansion / skip_planes))
-                # print(f'skip_connections: ({self.inplanes} -> {skip_planes})')
-                # print(f'skip_connections: ({skip_planes} -> {planes * block.expansion})')
                 
             else:
                 downsample = nn.Sequential(
@@ -163,14 +172,11 @@ class ResNet2(nn.Module):
                     nn.BatchNorm2d(planes * block.expansion)
                 )
 
-                # print(f'skip_connections: ({self.inplanes} -> {planes * block.expansion})')
-            
-       
         layers = []
 
         if use_custom:
             # print(f'<use custom> make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {use_custom_planes}')
-            layers.append(block(self.inplanes, use_custom_planes, stride, downsample, use_custom_conv=use_custom, planes_per_use_custom_planes=planes // use_custom_planes, tile=self.tile))
+            layers.append(block(self.inplanes, use_custom_planes, stride, downsample, use_custom_conv=use_custom, planes_per_use_custom_planes=planes // use_custom_planes, tile=self.tile, custom_conv=custom_conv))
             self.inplanes = use_custom_planes * block.expansion * (planes // use_custom_planes)
         
         else:
@@ -190,9 +196,9 @@ class ResNet2(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        padding = 2
-        x_padded = F.pad(x, (padding, padding, padding, padding))
-        x = self.conv1(x_padded)
+        # padding = 2
+        # x_padded = F.pad(x, (padding, padding, padding, padding))
+        x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
