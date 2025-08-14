@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import ctypes   # Load the shared library  
+import ctypes   # Load the shared library
+import matplotlib.pyplot as plt
 
 class CustomConv2D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
@@ -21,7 +22,7 @@ class CustomConv2D(nn.Module):
 
     def custom_conv2d(self, input, weight, batch_shape, bias=None, stride=1, padding=0):
         return F.conv2d(input, weight, bias=bias, stride=stride, padding=padding)
-
+    
 def encrypt_data(input, batch_shape, stride):
     return input
 
@@ -33,18 +34,7 @@ class Tile:
         return x.repeat_interleave(self.reps, dim=self.dim)
 
 class Bottleneck2(nn.Module):
-    '''
-    Contains three types of convolutional layers
-    conv1-Number of compression channels
-    conv2-Extract features
-    conv3-extended number of channels
-    This structure can better extract features, deepen the network, and reduce the number of network parameters。
-    inplanes - in_channels
-    planes = out_channels
-    '''
-
     expansion = 4
-    skip_expansion = 2
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4, tile=None, custom_conv=None):
         super(Bottleneck2, self).__init__()
@@ -52,20 +42,16 @@ class Bottleneck2(nn.Module):
         self.use_custom_conv = use_custom_conv
         self.custom_conv = custom_conv
         self.tile = tile
-        
-        # use_custom_conv: 암호화 내적을 하는가?
+
         if use_custom_conv:
             self.conv1 = CustomConv2D(inplanes, planes, kernel_size=1, stride=stride, bias=False)   # 1x1 conv
             self.bn1 = nn.BatchNorm2d(planes)
-            # print(f'bottleneck conv1: ({inplanes} -> {planes})')
             
             self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
             self.bn2 = nn.BatchNorm2d(planes)
-            # print(f'bottleneck conv2: ({planes} -> {planes})')
             
             self.conv3 = nn.Conv2d(planes, planes * 4 * planes_per_use_custom_planes, kernel_size=1, bias=False)
             self.bn3 = nn.BatchNorm2d(planes * 4 * planes_per_use_custom_planes)
-            # print(f'bottleneck conv3: ({planes} -> {planes * 4 * planes_per_use_custom_planes})')
             
             self.relu = nn.ReLU(inplace=True)
             self.downsample = downsample
@@ -75,21 +61,16 @@ class Bottleneck2(nn.Module):
             self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False)
 
             self.bn1 = nn.BatchNorm2d(planes)
-            # print(f'bottleneck conv1: ({inplanes} -> {planes})')
             
             self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
             self.bn2 = nn.BatchNorm2d(planes)
-            # print(f'bottleneck conv2: ({planes} -> {planes})')
             
             self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
             self.bn3 = nn.BatchNorm2d(planes * 4)
-            # print(f'bottleneck conv3: ({planes} -> {planes * 4})')
             
             self.relu = nn.ReLU(inplace=True)
             self.downsample = downsample
             self.stride = stride
-
-        # print('====')
 
 
         
@@ -127,18 +108,18 @@ class Bottleneck2(nn.Module):
         out += residual
         out = self.relu(out)
         return out
-
+ 
 
 class ResNet2(nn.Module):
     def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
         
         self.inplanes = 64
+        self.custom_conv_layer_index = custom_conv_layer_index
         super(ResNet2, self).__init__()
 
         self.custom_conv_layer_index = custom_conv_layer_index
         
-        # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, bias=False,)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=2, bias=False)                    #TODO: original conv 1x1
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
@@ -149,55 +130,49 @@ class ResNet2(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2, skip_planes=256, layer_index=3, use_custom_planes=128)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, skip_planes=512, layer_index=4, use_custom_planes=256)
 
-        self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.avgpool = nn.AvgPool2d(2)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-        self.tile = None
 
     def _make_layer(self, block, planes, blocks, skip_planes, stride=1, layer_index=1, use_custom_planes=16):
+        
         downsample = None
+        custom_conv = None
         use_custom = (layer_index == self.custom_conv_layer_index)
+        
+        if stride != 1 or self.inplanes != planes * block.expansion:# block.expansion=4
 
-        if stride != 1 or self.inplanes != planes * block.expansion:
             if use_custom:
                 custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
                 downsample = nn.Sequential(
                     nn.BatchNorm2d(skip_planes),
                 )
                 self.tile = Tile(dim=1, reps=int(planes * block.expansion / skip_planes))
-                
             else:
                 downsample = nn.Sequential(
                     nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
                     nn.BatchNorm2d(planes * block.expansion)
                 )
-
+       
         layers = []
 
         if use_custom:
-            # print(f'<use custom> make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {use_custom_planes}')
             layers.append(block(self.inplanes, use_custom_planes, stride, downsample, use_custom_conv=use_custom, planes_per_use_custom_planes=planes // use_custom_planes, tile=self.tile, custom_conv=custom_conv))
             self.inplanes = use_custom_planes * block.expansion * (planes // use_custom_planes)
         
         else:
-            # print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
             layers.append(block(self.inplanes, planes, stride, downsample, use_custom_conv=use_custom))
             self.inplanes = planes * block.expansion
 
         for i in range(1, blocks):
-            # print(f'make block - {i + 1} : 입력 채널 {self.inplanes} / 중간 채널 {planes}')
-            layers.append(block(self.inplanes, planes))
-
-        # print(f'make block - 1 : 입력 채널 {self.inplanes} / 중간 채널 {planes} / 최종 채널 {planes * block.expansion}')
+            layers.append(block(self.inplanes, planes))        
         
-        
-        # print("================")
-
         return nn.Sequential(*layers)
+    
+    
 
     def forward(self, x):
-        # padding = 2
-        # x_padded = F.pad(x, (padding, padding, padding, padding))
+        
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -208,9 +183,8 @@ class ResNet2(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
+
         x = self.avgpool(x)
-
         x = x.view(x.size(0), -1)
-
         x = self.fc(x)
         return x
