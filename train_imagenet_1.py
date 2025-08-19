@@ -10,12 +10,12 @@ from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
 from nets.early_stopping import EarlyStopping
 
 # 하이퍼파라미터
-BATCH_SIZE = 512   # GPU 당 배치 크기 (총 배치 = BATCH_SIZE * world_size)
+BATCH_SIZE = 32   # GPU 당 배치 크기 (총 배치 = BATCH_SIZE * world_size)
 NUM_EPOCHS = 10
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
 RESUME_PATH = "checkpoint.pth"
-NUM_WORKERS = 3
+NUM_WORKERS = 4
 CUSTOM_CONV_LAYER_INDEX = 1
 
 
