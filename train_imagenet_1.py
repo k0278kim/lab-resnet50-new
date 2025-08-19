@@ -129,5 +129,7 @@ def train(rank, world_size):
 
 
 if __name__ == "__main__":
-    world_size = torch.cuda.device_count()
-    mp.spawn(train, args=(world_size,), nprocs=world_size, join=True)
+    import os
+    world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+    train(local_rank, world_size)
