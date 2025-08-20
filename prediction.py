@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 # Load model
 # Path to the pretrained model
-PATH = './weights2/mnist/resnet-model-1_cusin-1_epoch-24.pth'
+PATH = './weights2/resnet-model-1_cusin-1_epoch-24.pth'
 # Ask user for batch size
 # Batch_Size = int(input('The number of handwritten font images predicted each times：'))
 Batch_Size = 1024
