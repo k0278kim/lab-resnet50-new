@@ -32,7 +32,7 @@ test_loader  = DataLoader(dataset=test_dataset, batch_size=Batch_Size, shuffle=F
 correct = 0
 total = 0
 n = 0
-total_n = 1
+total_n = 10
 with torch.no_grad():
     pbar = tqdm(test_loader, total=len(test_loader), desc="Testing")
     for images, labels in pbar:
@@ -43,7 +43,6 @@ with torch.no_grad():
             
             outputs = model(images)
             _, predicted = torch.max(outputs.detach(), 1)
-            print(f"predicted: {predicted} / labels: {labels} / outputs.data: {outputs.detach()}")
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             accuracy = 100 * correct / total
