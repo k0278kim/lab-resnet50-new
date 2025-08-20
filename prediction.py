@@ -11,10 +11,10 @@ from tqdm import tqdm
 
 # Load model
 # Path to the pretrained model
-PATH = './weights2/resnet-model_cusin-1_epoch-20.pth'
+PATH = '~/yoon/weights/mnist/resnet-model-1_cusin-1_epoch-24.pth'
 # Ask user for batch size
 # Batch_Size = int(input('The number of handwritten font images predicted each times：'))
-Batch_Size = 1
+Batch_Size = 1024
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
