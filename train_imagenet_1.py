@@ -1,135 +1,95 @@
-import os
 import torch
 import torch.nn as nn
-import torch.distributed as dist
-import torch.multiprocessing as mp
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader, distributed
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
 from nets.early_stopping import EarlyStopping
+import torchvision.transforms as transforms
+import os
+
+# CUDA 설정
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
 
 # 하이퍼파라미터
-BATCH_SIZE = 32   # GPU 당 배치 크기 (총 배치 = BATCH_SIZE * world_size)
-NUM_EPOCHS = 10
+BATCH_SIZE = 32
+NUM_EPOCHS = 90
 LEARNING_RATE = 1e-3
 MODEL_SAVE_PATH = "./resnet50-mnist.pth"
-RESUME_PATH = "checkpoint.pth"
+RESUME_PATH = "checkpoint.pth"  # 이전 학습 모델 경로
 NUM_WORKERS = 4
 CUSTOM_CONV_LAYER_INDEX = 1
 
+# 모델 초기화
+model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=1000, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX)
+model = model.to(device)
 
-def train(rank, world_size):
-    # -------------------
-    # DDP 초기화
-    # -------------------
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
-    torch.cuda.set_device(rank)
-    device = torch.device(f"cuda:{rank}")
+# 손실함수 및 옵티마이저
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    # -------------------
-    # 모델 초기화
-    # -------------------
-    model = ResNet1_imagenet(
-        Bottleneck1_imagenet, 
-        [3, 4, 6, 3], 
-        num_classes=1000, 
-        custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX
-    ).to(device)
+start_epoch = 0
+if os.path.exists(RESUME_PATH):
+    print(f"🔄 Loading checkpoint from {RESUME_PATH}...")
+    checkpoint = torch.load(RESUME_PATH, map_location=device)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    start_epoch = checkpoint["epoch"] + 1
+    print(f"✅ Resumed training from epoch {start_epoch}")
 
-    model = nn.parallel.DistributedDataParallel(model, device_ids=[rank])
+# 학습 데이터셋
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
 
-    # -------------------
-    # 옵티마이저 & 손실함수
-    # -------------------
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+train_dataset = datasets.ImageFolder("/data/imagenet/train", transform=transform)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
-    # -------------------
-    # 체크포인트 불러오기 (master만)
-    # -------------------
-    start_epoch = 0
-    if rank == 0 and os.path.exists(RESUME_PATH):
-        print(f"🔄 Loading checkpoint from {RESUME_PATH}...")
-        checkpoint = torch.load(RESUME_PATH, map_location=device)
-        model.module.load_state_dict(checkpoint["model_state_dict"])
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-        start_epoch = checkpoint["epoch"] + 1
-        print(f"✅ Resumed training from epoch {start_epoch}")
-    dist.barrier()  # 모든 rank가 동기화되도록
-    
-    # -------------------
-    # 데이터셋 & 분산 로더
-    # -------------------
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
+# 테스트 데이터셋
+# test_dataset = datasets.ImageFolder("/data/imagenet/val", transform=transform)
+# test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    train_dataset = datasets.ImageFolder("/data/imagenet/train", transform=transform)
-    train_sampler = distributed.DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
+# 조기 종료 조건 초기화
+early_stopping = EarlyStopping(patience=5, delta=0.001)
 
-    train_loader = DataLoader(
-        train_dataset, 
-        batch_size=BATCH_SIZE, 
-        sampler=train_sampler, 
-        num_workers=NUM_WORKERS, 
-        pin_memory=True
-    )
+# 학습 루프
+for epoch in range(NUM_EPOCHS):
+    model.train()
+    running_loss = 0.0
 
-    # -------------------
-    # 조기 종료
-    # -------------------
-    early_stopping = EarlyStopping(patience=5, delta=0.001)
+    pbar = tqdm(train_loader, desc=f"Epoch [{epoch + 1}/{NUM_EPOCHS}]")
+    for images, labels in pbar:
+        images, labels = images.to(device), labels.to(device)
 
-    # -------------------
-    # 학습 루프
-    # -------------------
-    for epoch in range(start_epoch, NUM_EPOCHS):
-        train_sampler.set_epoch(epoch)  # epoch별 shuffle 보장
-        model.train()
-        running_loss = 0.0
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
 
-        if rank == 0:
-            pbar = tqdm(train_loader, desc=f"Epoch [{epoch + 1}/{NUM_EPOCHS}]")
-        else:
-            pbar = train_loader
+        running_loss += loss.item()
+        pbar.set_postfix({'loss': f"{loss.item():.4f}"})
 
-        for images, labels in pbar:
-            images, labels = images.to(device), labels.to(device)
+    avg_loss = running_loss / len(train_loader)
+    print(f"✅ Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
 
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+    # 조기 종료 체크 (여기선 train_loss 기반이지만 val_loss가 있으면 교체 가능)
+    early_stopping(avg_loss)
+    if early_stopping.early_stop:
+        print(f"⛔ Early stopping at epoch {epoch+1}")
+        torch.save({
+    "epoch": epoch,
+    "model_state_dict": model.state_dict(),
+    "optimizer_state_dict": optimizer.state_dict()
+}, "checkpoint.pth")
 
-            running_loss += loss.item()
-            if rank == 0:
-                pbar.set_postfix({'loss': f"{loss.item():.4f}"})
-
-        avg_loss = running_loss / len(train_loader)
-
-        # master만 로그 + 저장
-        if rank == 0:
-            print(f"✅ Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
-            early_stopping(avg_loss)
-            if early_stopping.early_stop or epoch + 1 == NUM_EPOCHS:
-                print(f"⛔ Saving checkpoint at epoch {epoch+1}")
-                torch.save({
-                    "epoch": epoch,
-                    "model_state_dict": model.module.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict()
-                }, "checkpoint.pth")
-
-        dist.barrier()  # epoch 종료 시 동기화
-
-    dist.destroy_process_group()
-
-
-if __name__ == "__main__":
-    import os
-    world_size = int(os.environ.get("WORLD_SIZE", "1"))
-    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
-    train(local_rank, world_size)
+        break
+    elif epoch + 1 == NUM_EPOCHS:
+        torch.save({
+    "epoch": epoch,
+    "model_state_dict": model.state_dict(),
+    "optimizer_state_dict": optimizer.state_dict()
+}, "checkpoint.pth")
