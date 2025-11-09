@@ -27,12 +27,11 @@ optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
 # 학습 데이터셋
 transform = transforms.ToTensor()
-train_dataset = datasets.MNIST(root='data/', train=True, transform=transform, download=True)
+train_dataset = datasets.ImageFolder("../tiny-imagenet-200/train", transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
-# 테스트 데이터셋
-test_dataset = datasets.MNIST(root='data/', train=False, transform=transform, download=True)
-test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+test_dataset = datasets.ImageFolder("../tiny-imagenet-200/test", transform=transform)
+test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 조기 종료 조건 초기화
 early_stopping = EarlyStopping(patience=5, delta=0.001)
