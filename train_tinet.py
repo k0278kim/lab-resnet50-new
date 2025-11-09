@@ -60,10 +60,10 @@ for epoch in range(NUM_EPOCHS):
     early_stopping(avg_loss)
     if early_stopping.early_stop:
         print(f"⛔ Early stopping at epoch {epoch+1}")
-        torch.save(model.state_dict(), f'resnet-model_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
+        torch.save(model.state_dict(), f'tinet_model-1_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
         break
     elif epoch + 1 == NUM_EPOCHS:
-        torch.save(model.state_dict(), f'resnet-model_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
+        torch.save(model.state_dict(), f'tinet_model-1_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
 
 # 테스트 정확도 측정
 model.eval()
