@@ -30,29 +30,16 @@ test_dataset = datasets.ImageFolder("../tiny-imagenet-200/test", transform=trans
 test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 테스트 정확도 측정
+model.eval()
 correct = 0
 total = 0
-n = 0
-total_n = 10000
 with torch.no_grad():
-    pbar = tqdm(test_loader, total=len(test_loader), desc="Testing")
-    for images, labels in pbar:
-        if (n < total_n):
-            # print(f"\nBatch {i}: loaded")
-            images = images.to(device)
-            labels = labels.to(device)
-            
-            outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-            accuracy = 100 * correct / total
-            pbar.set_postfix({'Accuracy (%)': f"{accuracy:.2f}"})
-            n += 1
-        else:
-            break
+    for images, labels in tqdm(test_loader, desc="Testing"):
+        images, labels = images.to(device), labels.to(device)
+        outputs = model(images)
+        _, predicted = torch.max(outputs.data, 1)
+        correct += (predicted == labels).sum().item()
+        total += labels.size(0)
 
-
-# accuracy = 100 * correct / total
-print(f"✅ Accuracy on the MNIST test set: {accuracy:.2f}%")
+accuracy = 100 * correct / total
+print(f"✅ Test Accuracy: {accuracy:.2f}%")
