@@ -19,7 +19,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3],custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX, num_classes=200)
 model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu'), weights_only=True))
-model = model.cpu()
+model = model.to(device)
 model.eval()
 
 transform = transforms.ToTensor()
