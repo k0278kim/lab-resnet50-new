@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import ctypes   # Load the shared library  
+import ctypes   # Load the shared library
 
 class CustomConv2D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
@@ -13,14 +13,22 @@ class CustomConv2D(nn.Module):
         self.stride = stride
         self.padding = padding
 
-        self.weight = nn.Parameter(torch.randn(out_channels, in_channels, kernel_size, kernel_size) * 0.1)
+        #カーネルサイズがintの場合、タプルに変換
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+
+        self.weight = nn.Parameter(torch.randn(out_channels, in_channels, *kernel_size) * 0.1)
         self.bias = nn.Parameter(torch.zeros(out_channels)) if bias else None
 
-    def forward(self, x_padded, in_height, in_width):
-        return self.custom_conv2d(x_padded, in_height, in_width, self.weight, self.bias, self.stride, self.padding)
+    def forward(self, x, in_height=None, in_width=None): # x_padded -> x로 변경, in_height/width는 옵션
+        # ResNet2_imagenet.forward에서 F.pad를 사용하므로 padding=0으로 가정
+        # custom_conv2d 함수가 CTypes를 호출한다고 가정하고, 여기서는 F.conv2d로 대체
+        return self.custom_conv2d(x, self.weight, self.bias, self.stride, self.padding)
 
-    def custom_conv2d(self):
-        return nn.Conv2d(self.in_channels, self.out_channels, kernel_size=self.kernel_size, stride=self.stride, bias=self.bias)
+    def custom_conv2d(self, x, weight, bias, stride, padding):
+        # CTypes 로직 대신 PyTorch의 F.conv2d로 대체 (올바른 forward 구현)
+        # 만약 CTypes 함수를 호출해야 한다면, 이 부분을 CTypes 호출 로직으로 변경해야 합니다.
+        return F.conv2d(x, weight, bias, stride, padding)
     
 class Tile(nn.Module):
     def __init__(self, dim: int, reps: int):
@@ -105,7 +113,7 @@ class Bottleneck2_imagenet(nn.Module):
         out = self.bn3(out)
 
         if self.downsample is not None:
-            residual = self.downsample(x)
+            residual = self.downsample(x) # 원본 x를 downsample
 
         out += residual
         out = self.relu(out)
@@ -121,7 +129,7 @@ class ResNet2_imagenet(nn.Module):
         self.custom_conv_layer_index = custom_conv_layer_index
         
         # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, bias=False,)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=0, bias=False) # padding=0으로 변경 (forward에서 F.pad 사용)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
@@ -156,7 +164,12 @@ class ResNet2_imagenet(nn.Module):
             if use_custom:
                 print(planes * block.expansion / skip_planes, stride, skip_planes, planes * block.expansion)
                 downsample = nn.Sequential(
-                    nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
+                    # -------------------------------------------------
+                    # 🐛 BUGFIX: 여기가 수정 지점입니다. 🐛
+                    # 'stride=1'을 'stride=stride'로 변경하여
+                    # residual 경로도 동일하게 다운샘플링되도록 수정
+                    # -------------------------------------------------
+                    nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=stride, bias=False),
                     nn.BatchNorm2d(skip_planes),
                     Tile(dim=1, reps=int(planes * block.expansion / skip_planes)),
                     nn.BatchNorm2d(planes * block.expansion),
@@ -198,11 +211,13 @@ class ResNet2_imagenet(nn.Module):
 
     def forward(self, x):
         padding = 2
+        # F.pad는 (left, right, top, bottom) 순서
         x_padded = F.pad(x, (padding, padding, padding, padding))
-        _, _, in_height, in_width = x.shape
+        
+        # _, _, in_height, in_width = x.shape # CustomConv2D를 사용하지 않으므로 주석 처리
     
         # x = self.conv1(x_padded, in_height, in_width) # FIXME: custom_conv
-        x = self.conv1(x_padded)
+        x = self.conv1(x_padded) # padding=2를 적용했으므로 conv1의 padding=0
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
