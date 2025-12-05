@@ -3,7 +3,7 @@
 import torch
 from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
 BATCH_SIZE = 64
@@ -11,6 +11,7 @@ CUSTOM_CONV_LAYER_INDEX = 4
 NUM_WORKERS = 4
 # TODO: Update this path to your trained model weights
 PATH = './cifar10_model-1_cusin-4_epoch-80.pth'
+NUM_SAMPLES = 1  # Set to None to use the full dataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -35,6 +36,13 @@ transform = transforms.Compose([
 
 # Load CIFAR-10 Test Dataset
 test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+
+if NUM_SAMPLES is not None:
+    # Use only the first NUM_SAMPLES
+    indices = list(range(min(NUM_SAMPLES, len(test_dataset))))
+    test_dataset = Subset(test_dataset, indices)
+    print(f"Using a subset of {len(test_dataset)} samples.")
+
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
 # Test Accuracy Measurement
