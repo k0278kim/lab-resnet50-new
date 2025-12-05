@@ -10,7 +10,7 @@ BATCH_SIZE = 64
 CUSTOM_CONV_LAYER_INDEX = 4
 NUM_WORKERS = 4
 # TODO: Update this path to your trained model weights
-PATH = './cifar10_model-1_cusin-4_epoch-80.pth'
+PATH = '../weights/cifar10/cifar10_model-1_cusin-4_epoch-80.pth'
 NUM_SAMPLES = 1  # Set to None to use the full dataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
