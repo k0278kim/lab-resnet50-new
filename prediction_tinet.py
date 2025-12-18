@@ -13,7 +13,7 @@ from tqdm import tqdm
 BATCH_SIZE = 64
 CUSTOM_CONV_LAYER_INDEX = 4
 NUM_WORKERS = 6
-PATH = '../weights/tinet_model-1_cusin-4_epoch-73.pth'
+PATH = '../weights/tinet/tinet_model-1_cusin-4_epoch-73.pth'
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
