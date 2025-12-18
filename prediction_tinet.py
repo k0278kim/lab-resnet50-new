@@ -10,7 +10,7 @@ import cv2
 import time
 from tqdm import tqdm
 
-BATCH_SIZE = 64
+BATCH_SIZE = 1
 CUSTOM_CONV_LAYER_INDEX = 4
 NUM_WORKERS = 6
 PATH = '../weights/tinet/tinet_model-1_cusin-4_epoch-73.pth'
@@ -33,7 +33,7 @@ test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num
 model.eval()
 correct = 0
 total = 0
-n_dat = 10000
+n_dat = 100
 idx = 0
 with torch.no_grad():
     pbar = tqdm(test_loader, total=n_dat, desc="Testing", mininterval=1000000)
