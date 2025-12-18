@@ -33,9 +33,11 @@ test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num
 model.eval()
 correct = 0
 total = 0
+n_dat = 10000
 idx = 0
 with torch.no_grad():
-    for images, labels in tqdm(test_loader, desc="Testing", mininterval=1000000):
+    pbar = tqdm(test_loader, total=n_dat, desc="Testing", mininterval=1000000)
+    for images, labels in pbar:
         images, labels = images.to(device), labels.to(device)
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)
