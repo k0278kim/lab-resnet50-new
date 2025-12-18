@@ -33,6 +33,7 @@ test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num
 model.eval()
 correct = 0
 total = 0
+idx = 0
 with torch.no_grad():
     for images, labels in tqdm(test_loader, desc="Testing", mininterval=1000000):
         images, labels = images.to(device), labels.to(device)
@@ -43,6 +44,7 @@ with torch.no_grad():
         if (idx == 100 or idx == 1000):
             pbar.set_postfix({'Accuracy (%)': f"{accuracy:.2f}"})
             pbar.refresh()
+        idx += 1
 
 accuracy = 100 * correct / total
 print(f"✅ Test Accuracy: {accuracy:.2f}%")
