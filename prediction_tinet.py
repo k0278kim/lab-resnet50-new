@@ -43,6 +43,7 @@ with torch.no_grad():
         _, predicted = torch.max(outputs.data, 1)
         correct += (predicted == labels).sum().item()
         total += labels.size(0)
+        accuracy = 100 * correct / total
         if (idx == 100 or idx == 1000):
             pbar.set_postfix({'Accuracy (%)': f"{accuracy:.2f}"})
             pbar.refresh()
