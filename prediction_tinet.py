@@ -34,7 +34,7 @@ model.eval()
 correct = 0
 total = 0
 
-n_dat = 10000
+n_dat = 101
 with torch.no_grad():
     pbar = tqdm(test_loader, total=n_dat, desc="Testing", mininterval=1000000)
     idx = 0
