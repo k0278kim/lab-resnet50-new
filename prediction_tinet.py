@@ -36,7 +36,6 @@ total = 0
 
 n_dat = 10000
 with torch.no_grad():
-    makeKeys()
     pbar = tqdm(test_loader, total=n_dat, desc="Testing", mininterval=1000000)
     idx = 0
     for images, labels in pbar:
