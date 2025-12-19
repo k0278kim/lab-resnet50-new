@@ -33,21 +33,27 @@ test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num
 model.eval()
 correct = 0
 total = 0
+
 n_dat = 10000
-idx = 0
 with torch.no_grad():
+    makeKeys()
     pbar = tqdm(test_loader, total=n_dat, desc="Testing", mininterval=1000000)
+    idx = 0
     for images, labels in pbar:
-        images, labels = images.to(device), labels.to(device)
+        if (idx == n_dat):
+            break
+        images = images.to(device)
+        labels = labels.to(device)
         outputs = model(images)
-        _, predicted = torch.max(outputs.data, 1)
-        correct += (predicted == labels).sum().item()
+        _, predicted = torch.max(outputs.detach(), 1)
+        idx += 1
         total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+        # print(f"predicted: {predicted} / labels: {labels} / outputs.data: {outputs.detach()}")
         accuracy = 100 * correct / total
         if (idx == 100 or idx == 1000):
             pbar.set_postfix({'Accuracy (%)': f"{accuracy:.2f}"})
             pbar.refresh()
-        idx += 1
 
 accuracy = 100 * correct / total
 print(f"✅ Test Accuracy: {accuracy:.2f}%")
