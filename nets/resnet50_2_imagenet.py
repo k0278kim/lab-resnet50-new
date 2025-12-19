@@ -210,14 +210,14 @@ class ResNet2_imagenet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        padding = 2
+        # padding = 2
         # F.pad는 (left, right, top, bottom) 순서
-        x_padded = F.pad(x, (padding, padding, padding, padding))
+        # x_padded = F.pad(x, (padding, padding, padding, padding))
         
         # _, _, in_height, in_width = x.shape # CustomConv2D를 사용하지 않으므로 주석 처리
     
         # x = self.conv1(x_padded, in_height, in_width) # FIXME: custom_conv
-        x = self.conv1(x_padded) # padding=2를 적용했으므로 conv1의 padding=0
+        x = self.conv1(x) # padding=2를 적용했으므로 conv1의 padding=0
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
