@@ -26,24 +26,13 @@ criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
 # 학습 데이터셋 (CIFAR-10)
-# CIFAR-10 Mean: (0.4914, 0.4822, 0.4465), Std: (0.2023, 0.1994, 0.2010)
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
-
-transform_test = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+transform = transforms.ToTensor()
 
 # 데이터셋 로드 (없으면 다운로드)
-train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
-test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 조기 종료 조건 초기화
