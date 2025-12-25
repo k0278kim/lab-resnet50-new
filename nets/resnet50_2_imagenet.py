@@ -129,7 +129,7 @@ class ResNet2_imagenet(nn.Module):
         self.custom_conv_layer_index = custom_conv_layer_index
         
         # self.conv1 = CustomConv2D(1, 64, kernel_size=3, stride=1, padding=2, bias=False)            #FIXME: custom conv
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=0, bias=False) # padding=0으로 변경 (forward에서 F.pad 사용)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False) # padding=0으로 변경 (forward에서 F.pad 사용)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
