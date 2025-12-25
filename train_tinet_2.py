@@ -3,11 +3,11 @@ import torch.nn as nn
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from nets.resnet50_2_imagenet import ResNet2_imagenet, Bottleneck2_imagenet
+from nets.resnet50_2_tinet import ResNet, Bottleneck
 from nets.early_stopping import EarlyStopping
 
 # 하이퍼파라미터
-BATCH_SIZE = 64
+BATCH_SIZE = 256
 NUM_EPOCHS = 80
 LEARNING_RATE = 1e-3
 NUM_WORKERS = 6
@@ -18,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 # 모델 초기화
-model = ResNet2_imagenet(Bottleneck2_imagenet, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 
 # 손실함수 및 옵티마이저
 criterion = nn.CrossEntropyLoss()
@@ -60,10 +60,10 @@ for epoch in range(NUM_EPOCHS):
     early_stopping(avg_loss)
     if early_stopping.early_stop:
         print(f"⛔ Early stopping at epoch {epoch+1}")
-        torch.save(model.state_dict(), f'tinet_model-1_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
+        torch.save(model.state_dict(), f'tinet_model-2_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
         break
     elif epoch + 1 == NUM_EPOCHS:
-        torch.save(model.state_dict(), f'tinet_model-1_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
+        torch.save(model.state_dict(), f'tinet_model-2_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
 
 # 테스트 정확도 측정
 model.eval()
