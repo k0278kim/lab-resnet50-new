@@ -5,13 +5,18 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from nets.resnet50_2_tinet import ResNet, Bottleneck
 from nets.early_stopping import EarlyStopping
+import argparse
+
+parser = argparse.ArgumentParser(description='ResNet Model2 Training')
+parser.add_argument('--cusin', type=int, default=1, help='custom convolution layer index')
+args = parser.parse_args()
 
 # 하이퍼파라미터
 BATCH_SIZE = 256
 NUM_EPOCHS = 80
 LEARNING_RATE = 1e-3
 NUM_WORKERS = 6
-CUSTOM_CONV_LAYER_INDEX = 1
+CUSTOM_CONV_LAYER_INDEX = args.cusin
 
 # CUDA 설정
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
