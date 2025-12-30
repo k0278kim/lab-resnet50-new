@@ -1,8 +1,5 @@
 #!/bin/bash
 
-source ~/anaconda3/etc/profile.d/conda.sh
-conda activate qnet
-
 echo "=== 첫 번째 파일 실행 시작 ==="
 python train_tinet_2.py --cusin 1
 
