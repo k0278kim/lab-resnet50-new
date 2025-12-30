@@ -143,7 +143,7 @@ class ResNet(nn.Module):
         if stride != 1 or self.inplanes != planes * block.expansion:# block.expansion=4
 
             if use_custom:
-                custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False)
+                custom_conv = CustomConv2D(self.inplanes, skip_planes, kernel_size=1, stride=stride, bias=False)
                 downsample = nn.Sequential(
                     nn.BatchNorm2d(skip_planes),
                 )
