@@ -37,8 +37,8 @@ transform = transforms.ToTensor()
 train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
-test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+val_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 조기 종료 조건 초기화
 early_stopping = EarlyStopping(patience=5, delta=0.001)
@@ -78,7 +78,7 @@ model.eval()
 correct = 0
 total = 0
 with torch.no_grad():
-    for images, labels in tqdm(test_loader, desc="Testing"):
+    for images, labels in tqdm(val_loader, desc="Validation"):
         images, labels = images.to(device), labels.to(device)
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)
@@ -86,4 +86,4 @@ with torch.no_grad():
         total += labels.size(0)
 
 accuracy = 100 * correct / total
-print(f"✅ Test Accuracy: {accuracy:.2f}%")
+print(f"✅ Validation Accuracy: {accuracy:.2f}%")
