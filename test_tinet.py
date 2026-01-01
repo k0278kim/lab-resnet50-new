@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import os
+from PIL import Image
 from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
 from nets.resnet50_2_tinet import ResNet, Bottleneck
 import argparse
@@ -33,6 +34,49 @@ WEIGHT_PATHS = [
 ]
 WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
 
+# Custom Dataset for Tiny ImageNet Validation
+class TinyImageNetValDataset(Dataset):
+    def __init__(self, root, transform=None):
+        self.root = root
+        self.transform = transform
+        self.images_dir = os.path.join(root, 'images')
+        self.annotations_file = os.path.join(root, 'val_annotations.txt')
+        
+        # Load training dataset ID to index mapping to ensure consistency
+        # Assuming typical structure: ../tiny-imagenet-200/train
+        train_dir = os.path.join(os.path.dirname(root), 'train')
+        if os.path.exists(train_dir):
+             # We only need the class_to_idx mapping, so we don't load images
+            train_ds = datasets.ImageFolder(train_dir)
+            self.class_to_idx = train_ds.class_to_idx
+        else:
+            print(f"Warning: Train directory not found at {train_dir}. Class mapping might be incorrect if not standard.")
+            # Fallback or error handling could go here
+            self.class_to_idx = {} 
+
+        self.data = []
+        if os.path.exists(self.annotations_file):
+            with open(self.annotations_file, 'r') as f:
+                for line in f:
+                    parts = line.strip().split('\t')
+                    if len(parts) >= 2:
+                        img_name, class_wnid = parts[0], parts[1]
+                        if class_wnid in self.class_to_idx:
+                            self.data.append((img_name, self.class_to_idx[class_wnid]))
+        else:
+            print(f"Error: Annotation file not found at {self.annotations_file}")
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        img_name, label = self.data[idx]
+        img_path = os.path.join(self.images_dir, img_name)
+        image = Image.open(img_path).convert('RGB')
+        if self.transform:
+            image = self.transform(image)
+        return image, label
+
 # CUDA Setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
@@ -51,17 +95,23 @@ else:
     print(f"No weight file found at '{WEIGHT_PATH}'")
     exit()
 
-# Test Dataset (using test split for final evaluation)
+# Test Dataset
 transform = transforms.ToTensor()
-val_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transform)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
+# Use Custom Dataset instead of ImageFolder
+val_dataset = TinyImageNetValDataset(root="../tiny-imagenet-200/val", transform=transform)
+
+if len(val_dataset) == 0:
+    print("Error: No valid data found in validation dataset.")
+    exit()
+
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True) # Shuffle False for testing usually
 
 # Evaluation
 model.eval()
 correct = 0
 total = 0
 
-print("Starting Evaluation on Test Set...")
+print(f"Starting Evaluation on Validation Set ({len(val_dataset)} images)...")
 with torch.no_grad():
     for images, labels in tqdm(val_loader, desc="Testing"):
         images, labels = images.to(device), labels.to(device)
