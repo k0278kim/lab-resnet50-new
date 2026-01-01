@@ -34,8 +34,8 @@ transform = transforms.ToTensor()
 train_dataset = datasets.ImageFolder("../tiny-imagenet-200/train", transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
-test_dataset = datasets.ImageFolder("../tiny-imagenet-200/test", transform=transform)
-test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
+val_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transform)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 조기 종료 조건 초기화
 early_stopping = EarlyStopping(patience=5, delta=0.001)
@@ -75,7 +75,7 @@ model.eval()
 correct = 0
 total = 0
 with torch.no_grad():
-    for images, labels in tqdm(test_loader, desc="Testing"):
+    for images, labels in tqdm(val_loader, desc="Testing"):
         images, labels = images.to(device), labels.to(device)
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)
