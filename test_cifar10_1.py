@@ -3,21 +3,45 @@ import torch.nn as nn
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
 import os
+from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
+from nets.resnet50_2_tinet import ResNet, Bottleneck
+import argparse
+
+parser = argparse.ArgumentParser(description='ResNet Model2 Training')
+parser.add_argument('--cusin', type=int, default=1, help='custom convolution layer index')
+parser.add_argument('--model', type=int, default=1, help='model number')
+args = parser.parse_args()
 
 # Hyperparameters
 BATCH_SIZE = 64
 NUM_WORKERS = 4
-CUSTOM_CONV_LAYER_INDEX = 4
-WEIGHT_PATH = "../weights/cifar10/cifar10_model-1_cusin-4_epoch-80.pth"
+CUSTOM_CONV_LAYER_INDEX = args.cusin
+WEIGHT_PATHS = [
+    [
+        "../weights/cifar10/cifar10_model-1_cusin-1_epoch",
+        "../weights/cifar10/cifar10_model-1_cusin-2_epoch",
+        "../weights/cifar10/cifar10_model-1_cusin-3_epoch",
+        "../weights/cifar10/cifar10_model-1_cusin-4_epoch-80.pth"
+    ],
+    [
+        "../weights/cifar10/cifar10_model-2_cusin-1_epoch-80.pth",
+        "",
+        "",
+        ""
+    ]
+]
+WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
 
 # CUDA Setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 # Load Model
-model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+if args.model == 1: 
+    model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+else:
+    model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 
 # Load Checkpoint
 if os.path.isfile(WEIGHT_PATH):
