@@ -9,7 +9,7 @@ import os
 # Hyperparameters
 BATCH_SIZE = 64
 NUM_WORKERS = 4
-CUSTOM_CONV_LAYER_INDEX = 2
+CUSTOM_CONV_LAYER_INDEX = 4
 WEIGHT_PATH = "../weights/cifar10/cifar10_model-2_cusin-4_epoch-74.pth"
 
 # CUDA Setup
