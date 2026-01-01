@@ -8,7 +8,7 @@ from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
 from nets.resnet50_2_tinet import ResNet, Bottleneck
 import argparse
 
-parser = argparse.ArgumentParser(description='ResNet Model2 Training')
+parser = argparse.ArgumentParser(description='ResNet Test')
 parser.add_argument('--cusin', type=int, default=1, help='custom convolution layer index')
 parser.add_argument('--model', type=int, default=1, help='model number')
 args = parser.parse_args()
@@ -19,16 +19,16 @@ NUM_WORKERS = 4
 CUSTOM_CONV_LAYER_INDEX = args.cusin
 WEIGHT_PATHS = [
     [
-        "../weights/cifar10/cifar10_model-1_cusin-1_epoch",
-        "../weights/cifar10/cifar10_model-1_cusin-2_epoch",
-        "../weights/cifar10/cifar10_model-1_cusin-3_epoch",
-        "../weights/cifar10/cifar10_model-1_cusin-4_epoch-80.pth"
+        "../weights/tinet/tinet_model-1_cusin-1_epoch-61.pth",
+        "../weights/tinet/tinet_model-1_cusin-2_epoch-63.pth",
+        "../weights/tinet/tinet_model-1_cusin-3_epoch-66.pth",
+        "../weights/tinet/tinet_model-1_cusin-4_epoch-73.pth"
     ],
     [
         "../weights/cifar10/cifar10_model-2_cusin-1_epoch-80.pth",
-        "",
-        "",
-        ""
+        "../weights/cifar10/cifar10_model-2_cusin-2_epoch-80.pth",
+        "../weights/cifar10/cifar10_model-2_cusin-3_epoch-80.pth",
+        "../weights/cifar10/cifar10_model-2_cusin-4_epoch-80.pth"
     ]
 ]
 WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
@@ -39,9 +39,9 @@ print("Using device:", device)
 
 # Load Model
 if args.model == 1: 
-    model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+    model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 else:
-    model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+    model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 
 # Load Checkpoint
 if os.path.isfile(WEIGHT_PATH):
@@ -71,4 +71,4 @@ with torch.no_grad():
         total += labels.size(0)
 
 accuracy = 100 * correct / total
-print(f"✅ Final Test Accuracy (Model 1): {accuracy:.2f}%")
+print(f"✅ Final Test Accuracy: {accuracy:.2f}%")
