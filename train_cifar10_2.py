@@ -65,13 +65,13 @@ for epoch in range(NUM_EPOCHS):
     print(f"✅ Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
 
     # 조기 종료 체크
-    early_stopping(avg_loss)
-    if early_stopping.early_stop:
-        print(f"⛔ Early stopping at epoch {epoch+1}")
-        torch.save(model.state_dict(), f'cifar10_model-1_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
-        break
-    elif epoch + 1 == NUM_EPOCHS:
-        torch.save(model.state_dict(), f'cifar10_model-1_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
+    # early_stopping(avg_loss)
+    # if early_stopping.early_stop:
+    #     print(f"⛔ Early stopping at epoch {epoch+1}")
+    #     torch.save(model.state_dict(), f'cifar10_model-2_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
+    #     break
+    if epoch + 1 == NUM_EPOCHS:
+        torch.save(model.state_dict(), f'cifar10_model-2_cusin-{CUSTOM_CONV_LAYER_INDEX}_epoch-{epoch+1}.pth')
 
 # 테스트 정확도 측정
 model.eval()
