@@ -53,8 +53,8 @@ else:
 
 # Test Dataset (using test split for final evaluation)
 transform = transforms.ToTensor()
-test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+val_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transform)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 # Evaluation
 model.eval()
