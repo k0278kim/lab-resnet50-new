@@ -48,7 +48,7 @@ for epoch in range(NUM_EPOCHS):
     model.train()
     running_loss = 0.0
 
-    # pbar = tqdm(train_loader, desc=f"Epoch [{epoch + 1}/{NUM_EPOCHS}]")
+    pbar = tqdm(train_loader, desc=f"Epoch [{epoch + 1}/{NUM_EPOCHS}]")
     for images, labels in pbar:
         images, labels = images.to(device), labels.to(device)
 
