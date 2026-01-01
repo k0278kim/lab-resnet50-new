@@ -48,7 +48,7 @@ for epoch in range(NUM_EPOCHS):
     model.train()
     running_loss = 0.0
 
-    pbar = tqdm(train_loader, desc=f"Epoch [{epoch + 1}/{NUM_EPOCHS}]")
+    # pbar = tqdm(train_loader, desc=f"Epoch [{epoch + 1}/{NUM_EPOCHS}]")
     for images, labels in pbar:
         images, labels = images.to(device), labels.to(device)
 
@@ -59,7 +59,7 @@ for epoch in range(NUM_EPOCHS):
         optimizer.step()
 
         running_loss += loss.item()
-        pbar.set_postfix({'loss': f"{loss.item():.4f}"})
+        # pbar.set_postfix({'loss': f"{loss.item():.4f}"})
 
     avg_loss = running_loss / len(train_loader)
     print(f"✅ Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
