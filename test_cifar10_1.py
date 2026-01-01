@@ -4,14 +4,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
-import argparse
 import os
-
-# Argument Parser
-parser = argparse.ArgumentParser(description='ResNet Model1 CIFAR-10 Final Evaluation')
-parser.add_argument('--cusin', type=int, default=1, help='custom convolution layer index')
-parser.add_argument('--weight', type=str, required=True, help='path to the trained weight file (.pth)')
-args = parser.parse_args()
 
 # Hyperparameters
 BATCH_SIZE = 64
