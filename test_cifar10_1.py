@@ -10,7 +10,7 @@ import os
 BATCH_SIZE = 64
 NUM_WORKERS = 4
 CUSTOM_CONV_LAYER_INDEX = 4
-WEIGHT_PATH = "../weights/cifar10/cifar10_model-2_cusin-4_epoch-74.pth"
+WEIGHT_PATH = "../weights/cifar10/cifar10_model-1_cusin-4_epoch-80.pth"
 
 # CUDA Setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
