@@ -63,7 +63,7 @@ total = 0
 
 print("Starting Evaluation on Test Set...")
 with torch.no_grad():
-    for images, labels in tqdm(test_loader, desc="Testing"):
+    for images, labels in tqdm(val_loader, desc="Testing"):
         images, labels = images.to(device), labels.to(device)
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)
