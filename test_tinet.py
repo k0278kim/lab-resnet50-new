@@ -26,10 +26,10 @@ WEIGHT_PATHS = [
         "../weights/tinet/tinet_model-1_cusin-4_epoch-73.pth"
     ],
     [
-        "../weights/cifar10/cifar10_model-2_cusin-1_epoch-80.pth",
-        "../weights/cifar10/cifar10_model-2_cusin-2_epoch-80.pth",
-        "../weights/cifar10/cifar10_model-2_cusin-3_epoch-80.pth",
-        "../weights/cifar10/cifar10_model-2_cusin-4_epoch-80.pth"
+        "../weights/tinet/tinet_model-2_cusin-1_epoch-56.pth",
+        "../weights/tinet/tinet_model-2_cusin-2_epoch-57.pth",
+        "../weights/tinet/tinet_model-2_cusin-3_epoch-37.pth",
+        "../weights/tinet/tinet_model-2_cusin-4_epoch-59.pth"
     ]
 ]
 WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
