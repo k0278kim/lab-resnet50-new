@@ -19,16 +19,16 @@ NUM_WORKERS = 4
 CUSTOM_CONV_LAYER_INDEX = args.cusin
 WEIGHT_PATHS = [
     [
-        "../weights/cifar10/cifar10_model-1_cusin-1_epoch",
-        "../weights/cifar10/cifar10_model-1_cusin-2_epoch",
-        "../weights/cifar10/cifar10_model-1_cusin-3_epoch",
-        "../weights/cifar10/cifar10_model-1_cusin-4_epoch-80.pth"
+        "../weights/cifar10/cifar10_model-1_cusin-1_epoch-81.pth",
+        "../weights/cifar10/cifar10_model-1_cusin-2_epoch-95.pth",
+        "../weights/cifar10/cifar10_model-1_cusin-3_epoch-99.pth",
+        "../weights/cifar10/cifar10_model-1_cusin-4_epoch-84.pth"
     ],
     [
-        "../weights/cifar10/cifar10_model-2_cusin-1_epoch-80.pth",
-        "../weights/cifar10/cifar10_model-2_cusin-2_epoch-80.pth",
-        "../weights/cifar10/cifar10_model-2_cusin-3_epoch-80.pth",
-        "../weights/cifar10/cifar10_model-2_cusin-4_epoch-80.pth"
+        "../weights/cifar10/cifar10_model-2_cusin-1_epoch-100.pth",
+        "../weights/cifar10/cifar10_model-2_cusin-2_epoch-99.pth",
+        "../weights/cifar10/cifar10_model-2_cusin-3_epoch-86.pth",
+        "../weights/cifar10/cifar10_model-2_cusin-4_epoch-93.pth"
     ]
 ]
 WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
@@ -52,7 +52,11 @@ else:
     exit()
 
 # Test Dataset (using test split for final evaluation)
-transform = transforms.ToTensor()
+stats = ((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(*stats)
+])
 test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
