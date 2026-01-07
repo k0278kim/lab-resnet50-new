@@ -59,8 +59,8 @@ def fit_one_epoch(net, softmaxloss, epoch, epoch_size, epoch_size_val, gen, gen_
 
     torch.save(net.state_dict(), 'logs/Epoch{}-Total_Loss{}.pth'.format((epoch + 1), (total_loss / ((iteration + 1)))))
 
-print(f"[Test1] Train-set acc with net.train(): {acc_train_mode:.2f}%")
-print(f"[Test2] Train-set acc with net.eval(): {acc_eval_mode:.2f}%")
+    print(f"[Test1] Train-set acc with net.train(): {acc_train_mode:.2f}%")
+    print(f"[Test2] Train-set acc with net.eval(): {acc_eval_mode:.2f}%")
 
 if __name__ == '__main__':
     cuda = True
