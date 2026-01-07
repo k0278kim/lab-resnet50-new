@@ -75,8 +75,8 @@ if __name__ == '__main__':
     model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-    train_dataset = datasets.ImageFolder("../tiny-imagenet-200/train", transform=transform)
-    val_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transform)
+    train_dataset = datasets.ImageFolder("../tiny-imagenet-200/train", transform=transforms.ToTensor())
+    val_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transforms.ToTensor())
 
     gen = DataLoader(dataset=train_dataset, batch_size=Batch_size, shuffle=True, num_workers=0)
     gen_test = DataLoader(dataset=test_dataset, batch_size=Batch_size, shuffle=False, num_workers=0)
