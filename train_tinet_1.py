@@ -76,7 +76,7 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
     train_dataset = datasets.ImageFolder("../tiny-imagenet-200/train", transform=transforms.ToTensor())
-    val_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transforms.ToTensor())
+    test_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transforms.ToTensor())
 
     gen = DataLoader(dataset=train_dataset, batch_size=Batch_size, shuffle=True, num_workers=0)
     gen_test = DataLoader(dataset=test_dataset, batch_size=Batch_size, shuffle=False, num_workers=0)
