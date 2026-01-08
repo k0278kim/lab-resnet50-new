@@ -27,7 +27,7 @@ train_dataset = datasets.ImageFolder("../tiny-imagenet-200/train", transform=tra
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 test_dataset = datasets.ImageFolder("../tiny-imagenet-200/test", transform=transform)
-test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 테스트 정확도 측정
 model.eval()
