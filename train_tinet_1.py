@@ -44,8 +44,6 @@ def fit_one_epoch(net, softmaxloss, epoch, epoch_size, epoch_size_val, gen, gen_
     net.eval()
     acc_eval_mode = eval_acc(net, gen, cuda)
 
-    test_correct = 0
-
     with torch.no_grad():
         with tqdm(total=epoch_size_val, desc='Epoch{}/{}'.format(epoch + 1, Epoch), postfix=dict, mininterval=0.3) as pbar:
             for iteration, batch in enumerate(gen_test):
