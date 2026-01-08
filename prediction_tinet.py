@@ -36,23 +36,38 @@ total = 0
 
 n_dat = 101
 with torch.no_grad():
-    pbar = tqdm(test_loader, total=n_dat, desc="Testing", mininterval=1000000)
+    pbar = tqdm(test_loader, total=n_dat, desc="Testing")
     idx = 0
     for images, labels in pbar:
         if (idx == n_dat):
             break
+        
         images = images.to(device)
         labels = labels.to(device)
+        
         outputs = model(images)
-        _, predicted = torch.max(outputs.detach(), 1)
+        
+        # 정의하신 accuracy 함수 활용 (batch_size=1이므로 결과는 각 0 또는 100)
+        acc1, acc5 = accuracy(outputs, labels, topk=(1, 5))
+        
+        # 누적 계산 (백분율을 다시 개수로 변환)
+        batch_size = labels.size(0)
+        top1_correct += acc1.item() * batch_size / 100
+        top5_correct += acc5.item() * batch_size / 100
+        total += batch_size
+        
         idx += 1
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-        # print(f"predicted: {predicted} / labels: {labels} / outputs.data: {outputs.detach()}")
-        accuracy = 100 * correct / total
-        if (idx == 100 or idx == 1000):
-            pbar.set_postfix({'Accuracy (%)': f"{accuracy:.2f}"})
-            pbar.refresh()
+        
+        if idx % 10 == 0: # 진행 상황 업데이트 주기 조절
+            pbar.set_postfix({
+                'Top-1 (%)': f"{100 * top1_correct / total:.2f}",
+                'Top-5 (%)': f"{100 * top5_correct / total:.2f}"
+            })
 
-accuracy = 100 * correct / total
-print(f"✅ Test Accuracy: {accuracy:.2f}%")
+# 최종 결과 출력
+final_top1 = 100 * top1_correct / total
+final_top5 = 100 * top5_correct / total
+
+print(f"\n✅ Final Results (Samples: {total})")
+print(f"⭐ Top-1 Accuracy: {final_top1:.2f}%")
+print(f"⭐ Top-5 Accuracy: {final_top5:.2f}%")
