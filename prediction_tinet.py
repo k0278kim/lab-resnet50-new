@@ -11,9 +11,10 @@ import time
 from tqdm import tqdm
 
 BATCH_SIZE = 1
-CUSTOM_CONV_LAYER_INDEX = 4
+CUSTOM_CONV_LAYER_INDEX = 1
 NUM_WORKERS = 6
-PATH = '../weights/tinet/tinet_model-1_cusin-4_epoch-73.pth'
+PATHS = ['../weights/tinet/tinet_model-1_cusin-1_epoch-61.pth', '../weights/tinet/tinet_model-1_cusin-2_epoch-63.pth', '../weights/tinet/tinet_model-1_cusin-3_epoch-66.pth', '../weights/tinet/tinet_model-1_cusin-4_epoch-73.pth']
+PATH = PATHS[CUSTOM_CONV_LAYER_INDEX - 1]
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
