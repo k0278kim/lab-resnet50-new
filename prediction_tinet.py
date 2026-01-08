@@ -30,12 +30,6 @@ train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, nu
 val_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transform)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
-# 테스트 정확도 측정
-model.eval()
-top1_correct = 0
-top5_correct = 0
-total = 0
-
 def accuracy(output, target, topk=(1, 5)):
     """Top-k 정확도 계산 함수"""
     with torch.no_grad():
@@ -56,40 +50,35 @@ def accuracy(output, target, topk=(1, 5)):
             res.append(correct_k.mul_(100.0 / batch_size))
         return res # [Top-1 Accuracy, Top-5 Accuracy]
 
-n_dat = 101
+model.eval()
+top1_cnt = 0
+top5_cnt = 0
+total_samples = 0
+n_dat = 100 # 테스트할 샘플 수
+
 with torch.no_grad():
-    pbar = tqdm(val_loader, total=n_dat, desc="Testing")
-    idx = 0
-    for images, labels in pbar:
-        if (idx == n_dat):
+    pbar = tqdm(enumerate(val_loader), total=n_dat, desc="Testing")
+    for i, (images, labels) in pbar:
+        if i >= n_dat:
             break
         
-        images = images.to(device)
-        labels = labels.to(device)
-        
+        images, labels = images.to(device), labels.to(device)
         outputs = model(images)
         
-        # 정의하신 accuracy 함수 활용 (batch_size=1이므로 결과는 각 0 또는 100)
-        acc1, acc5 = accuracy(outputs, labels, topk=(1, 5))
+        # Top-5 예측 인덱스 추출
+        _, pred5 = outputs.topk(5, 1, True, True)
         
-        # 누적 계산 (백분율을 다시 개수로 변환)
-        batch_size = labels.size(0)
-        top1_correct += acc1.item() * batch_size / 100
-        top5_correct += acc5.item() * batch_size / 100
-        total += batch_size
+        # Top-1 판정
+        top1_cnt += (pred5[:, 0] == labels).sum().item()
+        # Top-5 판정 (5개 예측값 중 정답이 있는지 확인)
+        top5_cnt += (pred5 == labels.view(-1, 1)).any(dim=1).sum().item()
         
-        idx += 1
+        total_samples += labels.size(0)
         
-        if idx % 10 == 0: # 진행 상황 업데이트 주기 조절
-            pbar.set_postfix({
-                'Top-1 (%)': f"{100 * top1_correct / total:.2f}",
-                'Top-5 (%)': f"{100 * top5_correct / total:.2f}"
-            })
+        pbar.set_postfix({
+            'Top-1': f"{100 * top1_cnt / total_samples:.2f}%",
+            'Top-5': f"{100 * top5_cnt / total_samples:.2f}%"
+        })
 
-# 최종 결과 출력
-final_top1 = 100 * top1_correct / total
-final_top5 = 100 * top5_correct / total
-
-print(f"\n✅ Final Results (Samples: {total})")
-print(f"⭐ Top-1 Accuracy: {final_top1:.2f}%")
-print(f"⭐ Top-5 Accuracy: {final_top5:.2f}%")
+print(f"\n⭐ 최종 Top-1: {100 * top1_cnt / total_samples:.2f}%")
+print(f"⭐ 최종 Top-5: {100 * top5_cnt / total_samples:.2f}%")
