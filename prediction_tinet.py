@@ -31,7 +31,8 @@ test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num
 
 # 테스트 정확도 측정
 model.eval()
-correct = 0
+top1_correct = 0
+top5_correct = 0
 total = 0
 
 def accuracy(output, target, topk=(1, 5)):
