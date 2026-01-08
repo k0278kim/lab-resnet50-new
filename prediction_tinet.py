@@ -58,7 +58,7 @@ def accuracy(output, target, topk=(1, 5)):
 
 n_dat = 101
 with torch.no_grad():
-    pbar = tqdm(test_loader, total=n_dat, desc="Testing")
+    pbar = tqdm(val_loader, total=n_dat, desc="Testing")
     idx = 0
     for images, labels in pbar:
         if (idx == n_dat):
