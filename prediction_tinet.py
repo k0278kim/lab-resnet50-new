@@ -34,6 +34,26 @@ model.eval()
 correct = 0
 total = 0
 
+def accuracy(output, target, topk=(1, 5)):
+    """Top-k 정확도 계산 함수"""
+    with torch.no_grad():
+        maxk = max(topk)
+        batch_size = target.size(0)
+
+        # 상위 maxk개의 예측 인덱스를 가져옴
+        _, pred = output.topk(maxk, 1, True, True)
+        pred = pred.t()  # 차원 변경 (maxk, batch_size)
+
+        # 정답 레이블과 비교하여 맞았는지 확인 (정답을 동일한 형상으로 확장)
+        correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+        res = []
+        for k in topk:
+            # 상위 k개 안에 정답이 포함된 개수를 합산
+            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
+            res.append(correct_k.mul_(100.0 / batch_size))
+        return res # [Top-1 Accuracy, Top-5 Accuracy]
+
 n_dat = 101
 with torch.no_grad():
     pbar = tqdm(test_loader, total=n_dat, desc="Testing")
