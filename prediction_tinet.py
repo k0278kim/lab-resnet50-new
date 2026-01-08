@@ -13,7 +13,8 @@ from tqdm import tqdm
 BATCH_SIZE = 1
 CUSTOM_CONV_LAYER_INDEX = 4
 NUM_WORKERS = 6
-PATH = '../weights/tinet/tinet_model-1_cusin-4_epoch-73.pth'
+PATHS = ['../weights/tinet/tinet_model-1_cusin-1_epoch-61.pth', '../weights/tinet/tinet_model-1_cusin-2_epoch-63.pth', '../weights/tinet/tinet_model-1_cusin-3_epoch-66.pth', '../weights/tinet/tinet_model-1_cusin-4_epoch-73.pth']
+PATH = PATHS[CUSTOM_CONV_LAYER_INDEX - 1]
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -26,8 +27,8 @@ transform = transforms.ToTensor()
 train_dataset = datasets.ImageFolder("../tiny-imagenet-200/train", transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
-test_dataset = datasets.ImageFolder("../tiny-imagenet-200/test", transform=transform)
-test_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
+val_dataset = datasets.ImageFolder("../tiny-imagenet-200/val", transform=transform)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 # 테스트 정확도 측정
 model.eval()
@@ -36,7 +37,7 @@ total = 0
 
 n_dat = 101
 with torch.no_grad():
-    pbar = tqdm(test_loader, total=n_dat, desc="Testing", mininterval=1000000)
+    pbar = tqdm(val_loader, total=n_dat, desc="Testing", mininterval=1000000)
     idx = 0
     for images, labels in pbar:
         if (idx == n_dat):
