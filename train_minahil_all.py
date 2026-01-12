@@ -4,7 +4,7 @@ from torch.autograd import Variable
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 #import cv2
-from nets.resnet50 import Bottleneck, ResNet
+from nets.resnet50_2_tinet import Bottleneck, ResNet
 # from utils import load_pretrained_weights  # A new function for weight loading
 from tqdm import tqdm
 
