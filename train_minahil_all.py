@@ -105,7 +105,7 @@ if __name__ == '__main__':
     # ----------------------------#
     #   是否使用预训练模型
     # ----------------------------#
-    pre_train = True                            
+    pre_train = False                            
     # ----------------------------#
     #   是否使用余弦退火学习率
     # ----------------------------#
@@ -124,9 +124,6 @@ if __name__ == '__main__':
     # 创建模型
     model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200) 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if pre_train:
-        model_path = 'logs/resnet50-mnist.pth'
-        model.load_state_dict(torch.load(model_path))
         # state_dict = torch.load(model_path, map_location=torch.device('cpu'))
         # load_pretrained_weights(model, model_path, device)  #  New function to load weights
  
