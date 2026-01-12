@@ -129,6 +129,7 @@ if __name__ == '__main__':
  
     
     model = model.to(device)
+    transform = transforms.ToTensor()
 
     train_dataset = datasets.ImageFolder("../tiny-imagenet-200/train", transform=transform)
     test_dataset = datasets.ImageFolder("../tiny-imagenet-200/test", transform=transform)
