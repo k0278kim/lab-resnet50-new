@@ -45,7 +45,7 @@ transform_test = transforms.Compose([
 
 train_dataset = datasets.MNIST(root='data/', train=True,                            #convert train to False
                                    transform=transforms.ToTensor(), download=False)
-test_da= datasets.MNIST(root='data/', train=False,
+test_dataset = datasets.MNIST(root='data/', train=False,
                                   transform=transforms.ToTensor(), download=False)
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
