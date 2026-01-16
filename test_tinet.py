@@ -6,6 +6,7 @@ from tqdm import tqdm
 import os
 from PIL import Image
 from nets.resnet50_1_imagenet import ResNet, Bottleneck
+import utils
 # from nets.resnet50_2_tinet import ResNet, Bottleneck
 import argparse
 from tiny_imagenet_dataset import *
