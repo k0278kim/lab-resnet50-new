@@ -107,7 +107,7 @@ data_loader = torch.utils.data.DataLoader(
     sampler=train_sampler,
     num_workers=NUM_WORKERS,
     pin_memory=True,
-    collate_fn=collate_fn,
+    collate_fn=None,
 )
 data_loader_test = torch.utils.data.DataLoader(
     dataset_test, batch_size=BATCH_SIZE, sampler=test_sampler, num_workers=NUM_WORKERS, pin_memory=True
