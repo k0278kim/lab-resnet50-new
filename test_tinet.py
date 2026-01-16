@@ -57,42 +57,42 @@ def calculate_topk_accuracy(output, target, topk=(1, 5)):
             res.append(correct_k.item())
         return res # [Top-1 맞은 개수, Top-5 맞은 개수]
 
-# --- 커스텀 데이터셋 클래스 (기존과 동일) ---
-class TinyImageNetValDataset(Dataset):
-    def __init__(self, root, transform=None):
-        self.root = root
-        self.transform = transform
-        self.images_dir = os.path.join(root, 'images')
-        self.annotations_file = os.path.join(root, 'val_annotations.txt')
+# # --- 커스텀 데이터셋 클래스 (기존과 동일) ---
+# class TinyImageNetValDataset(Dataset):
+#     def __init__(self, root, transform=None):
+#         self.root = root
+#         self.transform = transform
+#         self.images_dir = os.path.join(root, 'images')
+#         self.annotations_file = os.path.join(root, 'val_annotations.txt')
         
-        train_dir = os.path.join(os.path.dirname(root), 'train')
-        if os.path.exists(train_dir):
-            train_ds = datasets.ImageFolder(train_dir)
-            self.class_to_idx = train_ds.class_to_idx
-        else:
-            print(f"Warning: Train directory not found. Mapping might be wrong.")
-            self.class_to_idx = {} 
+#         train_dir = os.path.join(os.path.dirname(root), 'train')
+#         if os.path.exists(train_dir):
+#             train_ds = datasets.ImageFolder(train_dir)
+#             self.class_to_idx = train_ds.class_to_idx
+#         else:
+#             print(f"Warning: Train directory not found. Mapping might be wrong.")
+#             self.class_to_idx = {} 
 
-        self.data = []
-        if os.path.exists(self.annotations_file):
-            with open(self.annotations_file, 'r') as f:
-                for line in f:
-                    parts = line.strip().split('\t')
-                    if len(parts) >= 2:
-                        img_name, class_wnid = parts[0], parts[1]
-                        if class_wnid in self.class_to_idx:
-                            self.data.append((img_name, self.class_to_idx[class_wnid]))
+#         self.data = []
+#         if os.path.exists(self.annotations_file):
+#             with open(self.annotations_file, 'r') as f:
+#                 for line in f:
+#                     parts = line.strip().split('\t')
+#                     if len(parts) >= 2:
+#                         img_name, class_wnid = parts[0], parts[1]
+#                         if class_wnid in self.class_to_idx:
+#                             self.data.append((img_name, self.class_to_idx[class_wnid]))
 
-    def __len__(self):
-        return len(self.data)
+#     def __len__(self):
+#         return len(self.data)
 
-    def __getitem__(self, idx):
-        img_name, label = self.data[idx]
-        img_path = os.path.join(self.images_dir, img_name)
-        image = Image.open(img_path).convert('RGB')
-        if self.transform:
-            image = self.transform(image)
-        return image, label
+#     def __getitem__(self, idx):
+#         img_name, label = self.data[idx]
+#         img_path = os.path.join(self.images_dir, img_name)
+#         image = Image.open(img_path).convert('RGB')
+#         if self.transform:
+#             image = self.transform(image)
+#         return image, label
 
 # --- 메인 실행부 ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
