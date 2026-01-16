@@ -97,11 +97,6 @@ class TinyImageNetValDataset(Dataset):
 # --- 메인 실행부 ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-if os.path.isfile(WEIGHT_PATH):
-    model.load_state_dict(torch.load(WEIGHT_PATH, weights_only=True))
-else:
-    exit(f"No weight file found at '{WEIGHT_PATH}'")
-
 dataset, dataset_test, train_sampler, test_sampler = load_data(train_dir, val_dir, args)
 
 data_loader = torch.utils.data.DataLoader(
@@ -124,6 +119,9 @@ model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200, custom_conv_layer_inde
 model.conv1 = nn.Conv2d(3,64, kernel_size=(3,3), stride=(1,1), padding=(1,1), bias=False)
 model.maxpool = nn.Identity()
 model.to(device)
+
+checkpoint = torch.load(args.resume, map_location="cpu")
+model.load_state_dict(checkpoint["model"])
 
 criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
 
