@@ -97,6 +97,8 @@ def calculate_topk_accuracy(output, target, topk=(1, 5)):
 # --- 메인 실행부 ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+train_dir = os.path.join(args.data_path, "train")
+val_dir = os.path.join(args.data_path, "val")
 dataset, dataset_test, train_sampler, test_sampler = load_data(train_dir, val_dir, args)
 
 data_loader = torch.utils.data.DataLoader(
