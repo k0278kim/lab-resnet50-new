@@ -118,6 +118,7 @@ data_loader_test = torch.utils.data.DataLoader(
 # val_dataset = TinyImageNetValDataset(root="../tiny-imagenet-200/val", transform=transform)
 # val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 log_suffix = ""
+print_freq = 100
 
 model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 model.conv1 = nn.Conv2d(3,64, kernel_size=(3,3), stride=(1,1), padding=(1,1), bias=False)
