@@ -10,6 +10,7 @@ from torchvision.datasets.folder import default_loader
 from torchvision.datasets.folder import default_loader
 from torchvision.datasets.utils import extract_archive, check_integrity, download_url, verify_str_arg
 from torchvision import transforms
+import torch
 
 def load_data(traindir, valdir, args):
     # Data loading code
