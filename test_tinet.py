@@ -103,14 +103,14 @@ dataset, dataset_test, train_sampler, test_sampler = load_data(train_dir, val_di
 
 data_loader = torch.utils.data.DataLoader(
     dataset,
-    batch_size=args.batch_size,
+    batch_size=BATCH_SIZE,
     sampler=train_sampler,
-    num_workers=args.workers,
+    num_workers=NUM_WORKERS,
     pin_memory=True,
     collate_fn=collate_fn,
 )
 data_loader_test = torch.utils.data.DataLoader(
-    dataset_test, batch_size=args.batch_size, sampler=test_sampler, num_workers=args.workers, pin_memory=True
+    dataset_test, batch_size=BATCH_SIZE, sampler=test_sampler, num_workers=NUM_WORKERS, pin_memory=True
 )
 # # 데이터 로더 (검증 셋)
 # transform = transforms.ToTensor()
@@ -122,10 +122,10 @@ model.conv1 = nn.Conv2d(3,64, kernel_size=(3,3), stride=(1,1), padding=(1,1), bi
 model.maxpool = nn.Identity()
 model.to(device)
 
-checkpoint = torch.load(args.resume, map_location="cpu")
+checkpoint = torch.load(WEIGHT_PATH, map_location="cpu")
 model.load_state_dict(checkpoint["model"])
 
-criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
+criterion = nn.CrossEntropyLoss(label_smoothing=0)
 
 # 평가 루프
 torch.backends.cudnn.benchmark = False
