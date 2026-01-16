@@ -6,7 +6,6 @@ from tqdm import tqdm
 import os
 from PIL import Image
 from nets.resnet50_1_imagenet import ResNet, Bottleneck
-import utils
 # from nets.resnet50_2_tinet import ResNet, Bottleneck
 import argparse
 from tiny_imagenet_dataset import *
@@ -132,7 +131,7 @@ criterion = nn.CrossEntropyLoss(label_smoothing=0)
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 model.eval()
-metric_logger = utils.MetricLogger(delimiter="  ")
+metric_logger = torch.utils.MetricLogger(delimiter="  ")
 header = f"Test: {log_suffix}"
 
 num_processed_samples = 0
