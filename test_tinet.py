@@ -5,9 +5,10 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import os
 from PIL import Image
-from nets.resnet50_1_imagenet import ResNet1_imagenet, Bottleneck1_imagenet
-from nets.resnet50_2_tinet import ResNet, Bottleneck
+from nets.resnet50_1_imagenet import ResNet, Bottleneck
+# from nets.resnet50_2_tinet import ResNet, Bottleneck
 import argparse
+from tiny_imagenet_dataset import *
 
 parser = argparse.ArgumentParser(description='ResNet Test')
 parser.add_argument('--cusin', type=int, default=1, help='custom convolution layer index')
@@ -32,7 +33,8 @@ WEIGHT_PATHS = [
         "../weights/tinet/tinet_model-2_cusin-4_epoch-59.pth"
     ]
 ]
-WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
+# WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
+WEIGHT_PATH = "../weights/checkpoint_best.pth"
 
 # --- Top-k 정확도 계산 함수 추가 ---
 def calculate_topk_accuracy(output, target, topk=(1, 5)):
@@ -95,44 +97,100 @@ class TinyImageNetValDataset(Dataset):
 # --- 메인 실행부 ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-if args.model == 1: 
-    model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
-else:
-    model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
-
 if os.path.isfile(WEIGHT_PATH):
     model.load_state_dict(torch.load(WEIGHT_PATH, weights_only=True))
 else:
     exit(f"No weight file found at '{WEIGHT_PATH}'")
 
-# 데이터 로더 (검증 셋)
-transform = transforms.ToTensor()
-val_dataset = TinyImageNetValDataset(root="../tiny-imagenet-200/val", transform=transform)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+dataset, dataset_test, train_sampler, test_sampler = load_data(train_dir, val_dir, args)
+
+data_loader = torch.utils.data.DataLoader(
+    dataset,
+    batch_size=args.batch_size,
+    sampler=train_sampler,
+    num_workers=args.workers,
+    pin_memory=True,
+    collate_fn=collate_fn,
+)
+data_loader_test = torch.utils.data.DataLoader(
+    dataset_test, batch_size=args.batch_size, sampler=test_sampler, num_workers=args.workers, pin_memory=True
+)
+# # 데이터 로더 (검증 셋)
+# transform = transforms.ToTensor()
+# val_dataset = TinyImageNetValDataset(root="../tiny-imagenet-200/val", transform=transform)
+# val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+
+model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+model.conv1 = nn.Conv2d(3,64, kernel_size=(3,3), stride=(1,1), padding=(1,1), bias=False)
+model.maxpool = nn.Identity()
+model.to(device)
+
+criterion = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
 
 # 평가 루프
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
 model.eval()
-top1_correct = 0
-top5_correct = 0
-total = 0
+metric_logger = utils.MetricLogger(delimiter="  ")
+header = f"Test: {log_suffix}"
 
-print(f"Starting Evaluation on Validation Set ({len(val_dataset)} images)...")
-with torch.no_grad():
-    for images, labels in tqdm(val_loader, desc="Testing"):
-        images, labels = images.to(device), labels.to(device)
-        outputs = model(images)
+num_processed_samples = 0
+with torch.inference_mode():
+    for image, target in metric_logger.log_every(data_loader, print_freq, header):
+        image = image.to(device, non_blocking=True)
+        target = target.to(device, non_blocking=True)
+        output = model(image)
+        loss = criterion(output, target)
+
+        acc1, acc5 = utils.accuracy(output, target, topk=(1, 5))
+        # FIXME need to take into account that the datasets
+        # could have been padded in distributed setup
+        batch_size = image.shape[0]
+        metric_logger.update(loss=loss.item())
+        metric_logger.meters["acc1"].update(acc1.item(), n=batch_size)
+        metric_logger.meters["acc5"].update(acc5.item(), n=batch_size)
+        num_processed_samples += batch_size
+# gather the stats from all processes
+
+num_processed_samples = utils.reduce_across_processes(num_processed_samples)
+if (
+    hasattr(data_loader.dataset, "__len__")
+    and len(data_loader.dataset) != num_processed_samples
+    and torch.distributed.get_rank() == 0
+):
+    # See FIXME above
+    warnings.warn(
+        f"It looks like the dataset has {len(data_loader.dataset)} samples, but {num_processed_samples} "
+        "samples were used for the validation, which might bias the results. "
+        "Try adjusting the batch size and / or the world size. "
+        "Setting the world size to 1 is always a safe bet."
+    )
+
+metric_logger.synchronize_between_processes()
+
+print(f"{header} Acc@1 {metric_logger.acc1.global_avg:.3f} Acc@5 {metric_logger.acc5.global_avg:.3f}")
+
+# top1_correct = 0
+# top5_correct = 0
+# total = 0
+
+# print(f"Starting Evaluation on Validation Set ({len(val_dataset)} images)...")
+# with torch.no_grad():
+#     for images, labels in tqdm(val_loader, desc="Testing"):
+#         images, labels = images.to(device), labels.to(device)
+#         outputs = model(images)
         
-        # Top-1, Top-5 개수 계산
-        t1, t5 = calculate_topk_accuracy(outputs, labels, topk=(1, 5))
+#         # Top-1, Top-5 개수 계산
+#         t1, t5 = calculate_topk_accuracy(outputs, labels, topk=(1, 5))
         
-        top1_correct += t1
-        top5_correct += t5
-        total += labels.size(0)
+#         top1_correct += t1
+#         top5_correct += t5
+#         total += labels.size(0)
 
-# 최종 결과 출력
-top1_acc = 100 * top1_correct / total
-top5_acc = 100 * top5_correct / total
+# # 최종 결과 출력
+# top1_acc = 100 * top1_correct / total
+# top5_acc = 100 * top5_correct / total
 
-print(f"\n✨ Final Evaluation Results")
-print(f"✅ Top-1 Accuracy: {top1_acc:.2f}%")
-print(f"✅ Top-5 Accuracy: {top5_acc:.2f}%")
+# print(f"\n✨ Final Evaluation Results")
+# print(f"✅ Top-1 Accuracy: {top1_acc:.2f}%")
+# print(f"✅ Top-5 Accuracy: {top5_acc:.2f}%")

@@ -26,7 +26,7 @@ class CustomConv2D(nn.Module):
 def encrypt_data(input, batch_shape, stride):
     return input
 
-class Bottleneck1_imagenet(nn.Module):
+class Bottleneck(nn.Module):
     '''
     Contains three types of convolutional layers
     conv1-Number of compression channels
@@ -40,7 +40,7 @@ class Bottleneck1_imagenet(nn.Module):
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4, custom_conv=None):
-        super(Bottleneck1_imagenet, self).__init__()
+        super(Bottleneck, self).__init__()
 
         self.use_custom_conv = use_custom_conv
         self.custom_conv = custom_conv
@@ -112,12 +112,12 @@ class Bottleneck1_imagenet(nn.Module):
         return out
  
 
-class ResNet1_imagenet(nn.Module):
+class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
         
         self.inplanes = 64
         self.custom_conv_layer_index = custom_conv_layer_index
-        super(ResNet1_imagenet, self).__init__()
+        super(ResNet, self).__init__()
 
         self.custom_conv_layer_index = custom_conv_layer_index
         
