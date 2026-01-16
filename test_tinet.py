@@ -58,43 +58,6 @@ def calculate_topk_accuracy(output, target, topk=(1, 5)):
             res.append(correct_k.item())
         return res # [Top-1 맞은 개수, Top-5 맞은 개수]
 
-# # --- 커스텀 데이터셋 클래스 (기존과 동일) ---
-# class TinyImageNetValDataset(Dataset):
-#     def __init__(self, root, transform=None):
-#         self.root = root
-#         self.transform = transform
-#         self.images_dir = os.path.join(root, 'images')
-#         self.annotations_file = os.path.join(root, 'val_annotations.txt')
-        
-#         train_dir = os.path.join(os.path.dirname(root), 'train')
-#         if os.path.exists(train_dir):
-#             train_ds = datasets.ImageFolder(train_dir)
-#             self.class_to_idx = train_ds.class_to_idx
-#         else:
-#             print(f"Warning: Train directory not found. Mapping might be wrong.")
-#             self.class_to_idx = {} 
-
-#         self.data = []
-#         if os.path.exists(self.annotations_file):
-#             with open(self.annotations_file, 'r') as f:
-#                 for line in f:
-#                     parts = line.strip().split('\t')
-#                     if len(parts) >= 2:
-#                         img_name, class_wnid = parts[0], parts[1]
-#                         if class_wnid in self.class_to_idx:
-#                             self.data.append((img_name, self.class_to_idx[class_wnid]))
-
-#     def __len__(self):
-#         return len(self.data)
-
-#     def __getitem__(self, idx):
-#         img_name, label = self.data[idx]
-#         img_path = os.path.join(self.images_dir, img_name)
-#         image = Image.open(img_path).convert('RGB')
-#         if self.transform:
-#             image = self.transform(image)
-#         return image, label
-
 # --- 메인 실행부 ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -113,10 +76,7 @@ data_loader = torch.utils.data.DataLoader(
 data_loader_test = torch.utils.data.DataLoader(
     dataset_test, batch_size=BATCH_SIZE, sampler=test_sampler, num_workers=NUM_WORKERS, pin_memory=True
 )
-# # 데이터 로더 (검증 셋)
-# transform = transforms.ToTensor()
-# val_dataset = TinyImageNetValDataset(root="../tiny-imagenet-200/val", transform=transform)
-# val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
+
 log_suffix = ""
 print_freq = 100
 
@@ -139,7 +99,7 @@ header = f"Test: {log_suffix}"
 
 num_processed_samples = 0
 with torch.inference_mode():
-    for image, target in metric_logger.log_every(data_loader, print_freq, header):
+    for image, target in metric_logger.log_every(data_loader_test, print_freq, header):
         image = image.to(device, non_blocking=True)
         target = target.to(device, non_blocking=True)
         output = model(image)
@@ -172,28 +132,3 @@ if (
 metric_logger.synchronize_between_processes()
 
 print(f"{header} Acc@1 {metric_logger.acc1.global_avg:.3f} Acc@5 {metric_logger.acc5.global_avg:.3f}")
-
-# top1_correct = 0
-# top5_correct = 0
-# total = 0
-
-# print(f"Starting Evaluation on Validation Set ({len(val_dataset)} images)...")
-# with torch.no_grad():
-#     for images, labels in tqdm(val_loader, desc="Testing"):
-#         images, labels = images.to(device), labels.to(device)
-#         outputs = model(images)
-        
-#         # Top-1, Top-5 개수 계산
-#         t1, t5 = calculate_topk_accuracy(outputs, labels, topk=(1, 5))
-        
-#         top1_correct += t1
-#         top5_correct += t5
-#         total += labels.size(0)
-
-# # 최종 결과 출력
-# top1_acc = 100 * top1_correct / total
-# top5_acc = 100 * top5_correct / total
-
-# print(f"\n✨ Final Evaluation Results")
-# print(f"✅ Top-1 Accuracy: {top1_acc:.2f}%")
-# print(f"✅ Top-5 Accuracy: {top5_acc:.2f}%")
