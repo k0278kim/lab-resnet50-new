@@ -99,7 +99,7 @@ header = f"Test: {log_suffix}"
 
 num_processed_samples = 0
 with torch.inference_mode():
-    for image, target in metric_logger.log_every(data_loader_test, print_freq, header):
+    for image, target in metric_logger.log_every(data_loader, print_freq, header):
         image = image.to(device, non_blocking=True)
         target = target.to(device, non_blocking=True)
         output = model(image)
