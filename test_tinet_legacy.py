@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import os
 from PIL import Image
-from nets.resnet50_1_tinet import ResNet, Bottleneck
+from nets.resnet50_1_imagenet import ResNet, Bottleneck
 import utils
 # from nets.resnet50_2_tinet import ResNet, Bottleneck
 import argparse
@@ -34,8 +34,8 @@ WEIGHT_PATHS = [
         "../weights/tinet/tinet_model-2_cusin-4_epoch-59.pth"
     ]
 ]
-# WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
-WEIGHT_PATH = "../weights/checkpoint_best.pth"
+WEIGHT_PATH = WEIGHT_PATHS[args.model - 1][CUSTOM_CONV_LAYER_INDEX - 1]
+# WEIGHT_PATH = "../weights/checkpoint_best.pth"
 
 # --- Top-k 정확도 계산 함수 추가 ---
 def calculate_topk_accuracy(output, target, topk=(1, 5)):

@@ -7,11 +7,11 @@ from tqdm import tqdm
 import argparse
 
 # 사용자 정의 모듈 임포트
-from nets.resnet50_2_tinet import ResNet, Bottleneck
+from nets.resnet50_1_tinet import ResNet, Bottleneck
 from nets.early_stopping import EarlyStopping
 
 # 1. 인자 설정
-parser = argparse.ArgumentParser(description='ResNet Model2 Training Optimization')
+parser = argparse.ArgumentParser(description='ResNet Model1 Training Optimization')
 parser.add_argument('--cusin', type=int, default=1, help='custom convolution layer index')
 args = parser.parse_args()
 
