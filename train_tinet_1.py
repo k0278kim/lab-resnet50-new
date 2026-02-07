@@ -7,7 +7,7 @@ import argparse
 import os
 
 # 사용자 정의 모듈 임포트
-from nets.resnet50_1_tinet import ResNet_pure, Bottleneck
+from nets.resnet50_1_tinet import ResNet_pure, Bottleneck_pure
 from nets.early_stopping import EarlyStopping
 from tiny_imagenet_dataset import load_data  # 기존에 검증된 데이터 로더 필수 활용
 
