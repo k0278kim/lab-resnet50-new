@@ -57,6 +57,17 @@ model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200, custom_conv_layer_inde
 # 가중치 유실 방지를 위해 구조 변경이 필요한 경우 여기서 수행 (예: 3x3 conv1)
 # model.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False).to(device)
 
+checkpoint_path = f'best_model_cusin_{CUSTOM_CONV_LAYER_INDEX}.pth'
+
+if os.path.exists(checkpoint_path):
+    print(f"🔄 Loading checkpoint: {checkpoint_path}")
+    # map_location은 GPU/CPU 환경이 달라도 안전하게 로드하기 위해 사용합니다.
+    state_dict = torch.load(checkpoint_path, map_location=device)
+    model.load_state_dict(state_dict)
+    print("✅ Weights loaded successfully. Resuming training...")
+else:
+    print("🆕 No checkpoint found. Starting from scratch.")
+
 criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 optimizer = optim.SGD(model.parameters(), lr=INITIAL_LR, momentum=MOMENTUM, 
                       weight_decay=WEIGHT_DECAY, nesterov=True)
@@ -112,11 +123,11 @@ for epoch in range(NUM_EPOCHS):
     scheduler.step()
 
     # 초기 학습 안정화를 위해 20에포크 이후부터 Early Stopping 적용
-    if epoch > 20:
-        early_stopping(avg_val_loss)
-        if early_stopping.early_stop:
-            print(f"⛔ Early stopping triggered at epoch {epoch+1}")
-            break
+    # if epoch > 20:
+    #     early_stopping(avg_val_loss)
+    #     if early_stopping.early_stop:
+    #         print(f"⛔ Early stopping triggered at epoch {epoch+1}")
+    #         break
 
     if val_acc > best_acc:
         best_acc = val_acc
