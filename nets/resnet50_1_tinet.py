@@ -5,6 +5,7 @@ import numpy as np
 import ctypes   # Load the shared library
 import matplotlib.pyplot as plt
 
+    
 class CustomConv2D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=True):
         super(CustomConv2D, self).__init__()
@@ -26,21 +27,12 @@ class CustomConv2D(nn.Module):
 def encrypt_data(input, batch_shape, stride):
     return input
 
-class Bottleneck(nn.Module):
-    '''
-    Contains three types of convolutional layers
-    conv1-Number of compression channels
-    conv2-Extract features
-    conv3-extended number of channels
-    This structure can better extract features, deepen the network, and reduce the number of network parameters。
-    inplanes - in_channels 
-    planes = out_channels
-    '''
+class Bottleneck_pure(nn.Module):
 
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, use_custom_conv=False, planes_per_use_custom_planes=4, custom_conv=None):
-        super(Bottleneck, self).__init__()
+        super(Bottleneck_pure, self).__init__()
 
         self.use_custom_conv = use_custom_conv
         self.custom_conv = custom_conv
@@ -112,12 +104,12 @@ class Bottleneck(nn.Module):
         return out
  
 
-class ResNet(nn.Module):
+class ResNet_pure(nn.Module):
     def __init__(self, block, layers, num_classes=10, custom_conv_layer_index=1):
         
         self.inplanes = 64
         self.custom_conv_layer_index = custom_conv_layer_index
-        super(ResNet, self).__init__()
+        super(ResNet_pure, self).__init__()
 
         self.custom_conv_layer_index = custom_conv_layer_index
         
@@ -153,6 +145,8 @@ class ResNet(nn.Module):
                 )
             else:
                 downsample = nn.Sequential(
+                    # nn.Conv2d(self.inplanes, skip_planes, kernel_size=1, stride=1, bias=False),
+                    # nn.BatchNorm2d(skip_planes),
                     nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False),
                     nn.BatchNorm2d(planes * block.expansion)
                 )
