@@ -7,7 +7,7 @@ import argparse
 import os
 
 # 사용자 정의 모듈 임포트
-from nets.resnet50_1_tinet import ResNet, Bottleneck
+from nets.resnet50_1_tinet import ResNet_pure, Bottleneck
 from nets.early_stopping import EarlyStopping
 from tiny_imagenet_dataset import load_data  # 기존에 검증된 데이터 로더 필수 활용
 
@@ -52,11 +52,10 @@ val_loader = DataLoader(
 )
 
 # 4. 모델 및 도구 설정
-model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+model = ResNet_pure(Bottleneck_pure, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 model.conv1 = nn.Conv2d(3,64, kernel_size=(3,3), stride=(1,1), padding=(1,1), bias=False)
 
-# 가중치 유실 방지를 위해 구조 변경이 필요한 경우 여기서 수행 (예: 3x3 conv1)
-# model.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False).to(device)
+model.to(device)
 
 checkpoint_path = f'best_model_cusin_{CUSTOM_CONV_LAYER_INDEX}.pth'
 
