@@ -14,11 +14,12 @@ from tiny_imagenet_dataset import load_data  # 기존에 검증된 데이터 로
 # 1. 인자 설정
 parser = argparse.ArgumentParser(description='ResNet Model1 Training Optimization')
 parser.add_argument('--cusin', type=int, default=1, help='custom convolution layer index')
+parser.add_argument('--epochs', type=int, default=150, help='number of epochs')
 args = parser.parse_args()
 
 # 2. 하이퍼파라미터 (기존 설정 유지)
 BATCH_SIZE = 128
-NUM_EPOCHS = 150
+NUM_EPOCHS = args.epochs
 INITIAL_LR = 0.1
 WEIGHT_DECAY = 5e-4
 MOMENTUM = 0.9
@@ -121,13 +122,6 @@ for epoch in range(NUM_EPOCHS):
     print(f"📊 결과: Val Loss = {avg_val_loss:.4f} | Val Acc = {val_acc:.2f}%")
 
     scheduler.step()
-
-    # 초기 학습 안정화를 위해 20에포크 이후부터 Early Stopping 적용
-    # if epoch > 20:
-    #     early_stopping(avg_val_loss)
-    #     if early_stopping.early_stop:
-    #         print(f"⛔ Early stopping triggered at epoch {epoch+1}")
-    #         break
 
     if val_acc > best_acc:
         best_acc = val_acc
