@@ -52,11 +52,7 @@ test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num
 # 모델 초기화
 # [주의] ResNet1_imagenet 내부의 conv1이 kernel_size=3, stride=1, padding=1 인지 꼭 확인하세요!
 # 만약 ImageNet용 그대로(7x7)라면 성능 안 나옵니다.
-if (MODEL_NUMBER == 1):
-    model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
-else:
-    model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
-
+model = ResNet1_imagenet(Bottleneck1_imagenet, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 # [수정 2] Optimizer 변경 및 Scheduler 추가
 criterion = nn.CrossEntropyLoss()
 # ResNet + CIFAR10 조합은 Adam보다 SGD+Momentum이 최고 성능을 냅니다.
