@@ -69,7 +69,7 @@ val_loader = DataLoader(
 )
 
 # 4. 모델 및 도구 설정
-model = ResNet_pure(Bottleneck_pure, [3, 4, 6, 3], num_classes=200, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
+model = ResNet_pure(Bottleneck_pure, [3, 4, 6, 3], num_classes=10, custom_conv_layer_index=CUSTOM_CONV_LAYER_INDEX).to(device)
 model.conv1 = nn.Conv2d(3,64, kernel_size=(3,3), stride=(1,1), padding=(1,1), bias=False)
 model.bn1 = nn.Identity()
 
