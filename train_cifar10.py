@@ -15,7 +15,7 @@ from tiny_imagenet_dataset import load_data  # 기존에 검증된 데이터 로
 # 1. 인자 설정
 parser = argparse.ArgumentParser(description='ResNet Model1 Training Optimization')
 parser.add_argument('--cusin', type=int, default=1, help='custom convolution layer index')
-parser.add_argument('--epochs', type=int, default=100, help='number of epochs')
+parser.add_argument('--epochs', type=int, default=200, help='number of epochs')
 args = parser.parse_args()
 
 # 2. 하이퍼파라미터 (기존 설정 유지)
@@ -25,6 +25,7 @@ INITIAL_LR = 0.1
 WEIGHT_DECAY = 5e-4
 MOMENTUM = 0.9
 NUM_WORKERS = 6
+LABEL_SMOOTHING = 0.1
 CUSTOM_CONV_LAYER_INDEX = args.cusin
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,26 +33,23 @@ print(f"🚀 Using device: {device}")
 
 # 3. 데이터 로드 (tiny_imagenet_dataset.py의 load_data 활용)
 # ImageFolder의 구조적 한계를 극복하기 위해 기존에 사용하시던 로직을 호출합니다.
-train_dir = "../tiny-imagenet-200/train"
-val_dir = "../tiny-imagenet-200/val"
 
 # 기존에 구현된 load_data는 Tiny ImageNet의 특수 구조(val_annotations.txt 등)를 처리합니다.
-stats = ((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-
-train_transform = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),     # 이미지를 랜덤하게 자름 (위치 정보 변화)
-    transforms.RandomHorizontalFlip(),        # 좌우 반전
+stats = ((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+transform_train = transforms.Compose([
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
-    transforms.Normalize(*stats)              # 정규화 (학습 안정성)
+    transforms.Normalize(mean=stats[0], std=stats[1])
 ])
 
-test_transform = transforms.Compose([
+transform_test = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize(*stats)              # 테스트 때도 정규화는 필수
+    transforms.Normalize(mean=stats[0], std=stats[1])
 ])
 
-train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
-test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=test_transform)
+train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
 
 train_loader = DataLoader(
     train_dataset, 
@@ -86,12 +84,12 @@ if os.path.exists(checkpoint_path):
 else:
     print("🆕 No checkpoint found. Starting from scratch.")
 
-criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+criterion = nn.CrossEntropyLoss(label_smoothing=LABEL_SMOOTHING)
 optimizer = optim.SGD(model.parameters(), lr=INITIAL_LR, momentum=MOMENTUM, 
                       weight_decay=WEIGHT_DECAY, nesterov=True)
 
 scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=NUM_EPOCHS)
-early_stopping = EarlyStopping(patience=15, delta=0.001)
+# early_stopping = EarlyStopping(patience=15, delta=0.001)
 scaler = torch.cuda.amp.GradScaler()
 
 # 5. 학습 루프
